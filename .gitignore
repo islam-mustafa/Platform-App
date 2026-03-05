@@ -1,0 +1,63 @@
+API_DOCUMENTATION.md
+
+BEFORE_AFTER_COMPARISON.md
+
+QUICk_START.md
+
+SUMMARY.md
+
+routes-doc.json
+
+
+# Dependency directories
+node_modules/
+package-lock.json
+
+# Environment variables
+config.env
+.env
+.env.local
+.env.production
+
+# Uploads
+uploads/
+uploads/users/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# nyc test coverage
+.nyc_output/
+
+# Grunt intermediate storage
+.grunt/
+
+# Bower dependency directory
+bower_components/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Backup files
+*.bak
+
+# Testing
+test-results/
