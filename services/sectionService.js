@@ -1,52 +1,64 @@
 const Section = require('../models/sectionModel');
-const Subject = require('../models/subjectModel');
+const Lesson = require('../models/lessonModel');
 const asyncHandler = require('express-async-handler');
 const ApiError = require('../utils/apiError');
 const { factory } = require('./baseService');
 
-// ✅ استخدام factory للـ CRUD الأساسي
 const sectionFactory = factory(Section, 'Section');
 
-// ==================== التحقق المخصص ====================
+exports.getSections = sectionFactory.getAll;
+exports.getSection = sectionFactory.getOne;
+exports.updateSection = sectionFactory.updateOne;
 
-// @desc    Create section (مع التحقق)
-// @route   POST /api/v1/sections
-// @access  Private/Admin
+// ✅ إنشاء قسم (للمواد اللي ليها أقسام فقط)
 exports.createSection = asyncHandler(async (req, res, next) => {
-  // 1) التحقق من وجود المادة
+  const Subject = require('../models/subjectModel');
+  const Grade = require('../models/gradeModel');
+  
   const subject = await Subject.findById(req.body.subjectId);
   if (!subject) {
     return next(new ApiError('Subject not found', 404));
   }
 
-  // 2) التحقق من أن المادة تقبل أقسام
+  // ✅ منع إضافة أقسام للمواد اللي ملهاش أقسام
   if (!subject.hasSections) {
     return next(new ApiError(
-      `Cannot add sections to subject "${subject.name}" because it does not support sections`,
+      `Cannot add sections to subject "${subject.name}" because it does not support sections. This subject uses automatic sections per grade.`,
       400
     ));
   }
 
-  // 3) إنشاء القسم
+  const grade = await Grade.findById(req.body.gradeId);
+  if (!grade) {
+    return next(new ApiError('Grade not found', 404));
+  }
+
   const section = await Section.create(req.body);
 
   res.status(201).json({
     status: 'success',
-    data: section
+    data: section,
   });
 });
 
-// ==================== دوال CRUD الأساسية من factory ====================
-exports.getSections = sectionFactory.getAll;
-exports.getSection = sectionFactory.getOne;
-exports.updateSection = sectionFactory.updateOne;
-exports.deleteSection = sectionFactory.deleteOne;
+// ✅ حذف قسم
+exports.deleteSection = asyncHandler(async (req, res, next) => {
+  const section = await Section.findById(req.params.id);
+  
+  if (!section) {
+    return next(new ApiError('Section not found', 404));
+  }
 
-// ==================== دوال إضافية ====================
+  if (section.isDefault) {
+    return next(new ApiError('Cannot delete default section', 400));
+  }
 
-// @desc    Toggle section active status
-// @route   PATCH /api/v1/sections/:id/toggle
-// @access  Private/Admin
+  await Lesson.deleteMany({ sectionId: section._id });
+  await Section.findByIdAndDelete(req.params.id);
+
+  res.status(204).send();
+});
+
 exports.toggleSectionStatus = asyncHandler(async (req, res, next) => {
   const section = await Section.findById(req.params.id);
   
@@ -64,24 +76,20 @@ exports.toggleSectionStatus = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Get lessons by section ID
-// @route   GET /api/v1/sections/:id/lessons
-// @access  Private
-exports.getSectionLessons = asyncHandler(async (req, res, next) => {
-  const section = await Section.findById(req.params.id);
-  
-  if (!section) {
-    return next(new ApiError('Section not found', 404));
-  }
+exports.reorderSections = asyncHandler(async (req, res, next) => {
+  const { sections } = req.body;
 
-  const Lesson = require('../models/lessonModel');
-  const lessons = await Lesson.find({ sectionId: section._id })
-    .sort({ order: 1 })
-    .select('-content.text');
+  const bulkOps = sections.map(({ id, order }) => ({
+    updateOne: {
+      filter: { _id: id },
+      update: { order },
+    },
+  }));
+
+  await Section.bulkWrite(bulkOps);
 
   res.status(200).json({
     status: 'success',
-    results: lessons.length,
-    data: lessons
+    message: 'Sections reordered successfully',
   });
 });

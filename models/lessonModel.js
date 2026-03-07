@@ -1,69 +1,91 @@
 const mongoose = require('mongoose');
-const Subject = require('./subjectModel');
-const Section = require('./sectionModel');
 
 const lessonSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true, trim: true },
-    description: String,
-    
-    // إما subjectId أو sectionId
-    subjectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject', index: true },
-    sectionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Section', index: true },
-
-    order: { type: Number, default: 0 },
-    content: {
-      videoUrl: String,
-      text: String,
-      attachments: [String],
-      duration: Number,
+    title: {
+      type: String,
+      required: [true, 'Lesson title is required'],
+      trim: true,
     },
-    isFree: { type: Boolean, default: false },
-    isActive: { type: Boolean, default: true },
+    description: {
+      type: String,
+      trim: true,
+    },
+    
+    sectionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Section',
+      required: [true, 'Lesson must belong to a section'],
+      index: true,
+    },
+
+    order: {
+      type: Number,
+      default: 0,
+    },
+    
+    content: {
+      videoUrl: {
+        type: String,
+        trim: true,
+      },
+      text: {
+        type: String,
+        trim: true,
+      },
+      attachments: [{
+        type: String,
+        trim: true,
+      }],
+      duration: {
+        type: Number,
+        min: 0,
+        default: 0,
+      },
+    },
+    
+    isFree: {
+      type: Boolean,
+      default: false,
+    },
+    
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );
 
-// ✅ التحقق: التأكد من توافق الدرس مع نوع المادة
-lessonSchema.pre('validate', async function(next) {
-  const hasSubject = !!this.subjectId;
-  const hasSection = !!this.sectionId;
-
-  // 1) لازم يكون واحد فقط موجود
-  if ((hasSubject && hasSection) || (!hasSubject && !hasSection)) {
-    return next(new Error('Lesson must belong to either a subject or a section'));
+// ✅ Middleware للتحقق من وجود القسم وملء gradeId تلقائيًا
+lessonSchema.pre('validate', async function() {
+  let next = null;
+  for (let i = 0; i < arguments.length; i++) {
+    if (typeof arguments[i] === 'function') {
+      next = arguments[i];
+      break;
+    }
   }
 
+  const callback = typeof next === 'function' ? next : (err) => {
+    if (err) throw err;
+  };
+
   try {
-    if (hasSubject) {
-      // درس تحت مادة مباشرة (زي الكيمياء)
-      const subject = await Subject.findById(this.subjectId);
-      if (!subject) return next(new Error('Subject not found'));
-      
-      // لو المادة ليها أقسام، مينفعش درس يكون تحت المادة مباشرة
-      if (subject.hasSections) {
-        return next(new Error(`Subject "${subject.name}" has sections. Lessons must be under a section`));
-      }
+    const Section = mongoose.model('Section');
+    const section = await Section.findById(this.sectionId);
+    
+    if (!section) {
+      return callback(new Error('Section not found'));
     }
 
-    if (hasSection) {
-      // درس تحت قسم (زي العربي)
-      const section = await Section.findById(this.sectionId).populate('subjectId');
-      if (!section) return next(new Error('Section not found'));
-      
-      // لو المادة ملهاش أقسام، مينفعش درس يكون تحت قسم
-      if (!section.subjectId.hasSections) {
-        return next(new Error(`Subject "${section.subjectId.name}" does not have sections. Cannot add lesson to section`));
-      }
-    }
-
-    next();
+    callback();
   } catch (error) {
-    next(error);
+    callback(error);
   }
 });
 
-lessonSchema.index({ subjectId: 1, order: 1 });
 lessonSchema.index({ sectionId: 1, order: 1 });
 
-module.exports = mongoose.model('Lesson', lessonSchema);
+const Lesson = mongoose.models.Lesson || mongoose.model('Lesson', lessonSchema);
+module.exports = Lesson;

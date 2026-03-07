@@ -7,24 +7,34 @@ const {
   getSectionValidator,
   updateSectionValidator,
   deleteSectionValidator,
+  toggleSectionValidator,
 } = require('../utils/validators/sectionValidator');
 
 const router = express.Router();
 
-// ==================== كل اللي تحتاج مصادقة ====================
+// ==================== جميع المسارات تحتاج مصادقة ====================
 router.use(protect);
 
-// ==================== للمستخدمين المسجلين (عرض فقط) ====================
+// ==================== مسارات عامة (للمستخدمين) ====================
 router.get('/', sectionService.getSections);
 router.get('/:id', getSectionValidator, sectionService.getSection);
-router.get('/:id/lessons', getSectionValidator, sectionService.getSectionLessons);
 
-// ==================== للأدمن فقط ====================
+// ==================== مسارات الأدمن والسوبر أدمن ====================
 router.use(allowedTo(ROLES.ADMIN, ROLES.SUPER_ADMIN));
 
+// إنشاء قسم جديد
 router.post('/', createSectionValidator, sectionService.createSection);
+
+// تحديث قسم
 router.put('/:id', updateSectionValidator, sectionService.updateSection);
+
+// حذف قسم
 router.delete('/:id', deleteSectionValidator, sectionService.deleteSection);
-router.patch('/:id/toggle', getSectionValidator, sectionService.toggleSectionStatus);
+
+// تبديل حالة القسم (تفعيل/تعطيل)
+router.patch('/:id/toggle', toggleSectionValidator, sectionService.toggleSectionStatus);
+
+// إعادة ترتيب الأقسام
+router.post('/reorder', sectionService.reorderSections);
 
 module.exports = router;

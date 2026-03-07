@@ -12,10 +12,18 @@ exports.createSubjectValidator = [
     .isLength({ min: 3, max: 100 })
     .withMessage('Subject name must be between 3 and 100 characters')
     .custom(async (name) => {
-      const subject = await Subject.findOne({ name });
-      if (subject) {
+      // التحقق من عدم وجود مادة مسبقًا
+      const existingSubject = await Subject.findOne({});
+      if (existingSubject) {
+        throw new Error('A subject already exists. You cannot create another one.');
+      }
+      
+      // التحقق من عدم تكرار الاسم
+      const subjectWithSameName = await Subject.findOne({ name });
+      if (subjectWithSameName) {
         throw new Error(`Subject with name "${name}" already exists`);
       }
+      
       return true;
     }),
 
@@ -107,6 +115,14 @@ exports.deleteSubjectValidator = [
  * التحقق من تبديل حالة المادة (تفعيل/تعطيل)
  */
 exports.toggleSubjectValidator = [
+  check('id').isMongoId().withMessage('Invalid Subject ID format'),
+  validatorMiddleware,
+];
+
+/**
+ * التحقق من جلب هيكل المادة
+ */
+exports.getSubjectStructureValidator = [
   check('id').isMongoId().withMessage('Invalid Subject ID format'),
   validatorMiddleware,
 ];
