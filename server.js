@@ -49,16 +49,24 @@ app.use((req, res, next) => {
 app.use(globalError);
 
 // Start server
+// Start server - modified for Vercel
 const PORT = process.env.PORT || 8000;
-const server = app.listen(PORT, () => {
-  console.log(`App running on port ${PORT}`);
-});
 
-// Handle unhandled promise rejections
-process.on("unhandledRejection", (err) => {
-  console.error(`UnhandledRejection Error: ${err.name} | ${err.message}`);
-  server.close(() => {
-    console.error("Shutting down...");
-    process.exit(1);
+// فقط للتشغيل المحلي (مش على Vercel)
+if (process.env.NODE_ENV !== 'production') {
+  const server = app.listen(PORT, () => {
+    console.log(`App running on port ${PORT}`);
   });
-});
+
+  // Handle unhandled promise rejections (للتشغيل المحلي فقط)
+  process.on("unhandledRejection", (err) => {
+    console.error(`UnhandledRejection Error: ${err.name} | ${err.message}`);
+    server.close(() => {
+      console.error("Shutting down...");
+      process.exit(1);
+    });
+  });
+}
+
+// للـ Vercel - لازم نعمل export للتطبيق
+module.exports = app;
