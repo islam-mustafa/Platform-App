@@ -2,9 +2,12 @@
   "name": "platform",
   "version": "1.0.0",
   "main": "index.js",
-  "scripts": {
-    "dev": "nodemon server.js"
-  },
+"scripts": {
+  "dev": "nodemon server.js",
+  "build": "echo 'Build completed'",
+  "start": "node server.js"
+},
+"type": "commonjs",
   "keywords": [],
   "author": "",
   "license": "ISC",
