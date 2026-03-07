@@ -1,31 +1,28 @@
-app.use(async (req, res, next) => {
+const mongoose = require('mongoose');
+
+const dbConnection = async () => {
   try {
-    const mongoose = require('mongoose');
-    
-    console.log('🔍 DB_URI exists:', !!process.env.DB_URI);
-    console.log('🔍 DB_URI prefix:', process.env.DB_URI ? process.env.DB_URI.substring(0, 20) + '...' : 'none');
-    
-    if (mongoose.connection.readyState !== 1) {
-      console.log('🔄 Attempting to connect...');
-      await mongoose.connect(process.env.DB_URI);
-      console.log('✅ Connected');
+    // ✅ للـ Vercel: نتجنب الاتصال المتكرر
+    if (mongoose.connection.readyState >= 1) {
+      console.log('Already connected to database');
+      return mongoose.connection;
     }
+
+    const conn = await mongoose.connect(process.env.DB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      // ⏱️ مهلة الاتصال (مهم لـ Vercel)
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
     
-    next();
+    console.log(`✅ Database Connected: ${conn.connection.host}`);
+    return conn;
   } catch (error) {
-    console.error('❌ Error:', {
-      message: error.message,
-      name: error.name,
-      code: error.code
-    });
-    
-    res.status(500).json({
-      status: 'error',
-      message: 'Database connection failed',
-      error: {
-        message: error.message,
-        code: error.code
-      }
-    });
+    console.error('❌ Database connection error:', error);
+    // في Vercel، لو حصل خطأ في الاتصال، نرمي الخطأ
+    throw error;
   }
-});
+};
+
+module.exports = dbConnection;
