@@ -1,7 +1,7 @@
 const { check } = require('express-validator');
 const mongoose = require('mongoose');
-const validatorMiddleware = require('../middlewares/validatorMiddleware');
-const User = require('../models/userModel');
+const validatorMiddleware = require('../../middlewares/validatorMiddleware');
+const User = require('../../models/userModel');
 
 const isMongoId = (value) => mongoose.Types.ObjectId.isValid(value);
 

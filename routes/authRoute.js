@@ -7,7 +7,7 @@ const {
   forgotPasswordValidator,
   verifyResetCodeValidator,
   resetPasswordValidator,
-} = require("../validators/authValidator");
+} = require("../utils/validators/authValidator");
 
 const {
   signup,

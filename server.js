@@ -7,6 +7,8 @@ const { globalError } = require("./middlewares/errorMiddleware");
 const dbConnection = require("./config/database");
 const authRoute = require("./routes/authRoute");
 const userRoute = require("./routes/userRoute");
+const subjectRoute = require('./routes/subjectRoute');
+const sectionRoute = require('./routes/sectionRoute');
 
 // Load environment variables
 dotenv.config({ path: "config.env" });
@@ -31,6 +33,8 @@ app.get("/", (req, res) => {
 // Mount routes
 app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/users", userRoute);
+app.use('/api/v1/subjects', subjectRoute);
+app.use('/api/v1/sections', sectionRoute);
 
 // Handle all undefined routes (Catch-all)
 app.use((req, res, next) => {

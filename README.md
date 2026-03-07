@@ -1,359 +1,382 @@
-# نظام إدارة المستخدمين والأدمن المتكامل (جاهز للإنتاج)
+# Complete Production-Level User & Admin Management System
 
-نظام متكامل للمصادقة وإدارة المستخدمين مبني على Node.js و Express و MongoDB مع JWT Tokens.
+A robust, production-ready authentication and user management system built with Node.js, Express, MongoDB, and JWT tokens.
 
-## 🚀 المميزات
+## 🚀 Features
 
-### نظام المصادقة (Authentication)
-- ✅ **JWT Access & Refresh Tokens** مع تدوير تلقائي
-- ✅ **تسجيل المستخدمين** مع تفعيل الإيميل
-- ✅ **تسجيل الدخول** مع فحوصات أمنية
-- ✅ **تسجيل الخروج** (جهاز واحد أو كل الأجهزة)
-- ✅ **تجديد التوكن** (Refresh Token Rotation)
-- ✅ **نظام تفعيل الإيميل** مع رابط آمن
-- ✅ **نسيان كلمة المرور** مع كود مكون من 6 أرقام
-- ✅ **إعادة تعيين كلمة المرور** بشكل آمن
+### Authentication System
+- ✅ **JWT Access & Refresh Tokens** with automatic rotation
+- ✅ **User Signup** with email verification
+- ✅ **User Login** with security checks
+- ✅ **Logout** (single device & all devices)
+- ✅ **Token Refresh** with rotation security pattern
+- ✅ **Email Verification** system
+- ✅ **Forgot Password** with 6-digit reset code
+- ✅ **Reset Password** functionality
 
-### مميزات المستخدم العادي
-- ✅ **إدارة الملف الشخصي** (عرض وتحديث)
-- ✅ **تغيير كلمة المرور** مع التحقق من القديمة
-- ✅ **رفع صورة شخصية** مع معالجة وتحسين الجودة
-- ✅ **تعطيل الحساب** مؤقتًا
+### User Features
+- ✅ **Profile Management** (view, update)
+- ✅ **Password Change** with validation
+- ✅ **Profile Image Upload** with Sharp processing (600x600 JPEG) + Cloudinary storage
+- ✅ **Account Deactivation**
 
-### مميزات الأدمن (Admin)
-- ✅ **إدارة المستخدمين** (إضافة، تعديل، حذف، عرض)
-- ✅ **تقسيم الصفحات والفلترة** لقوائم المستخدمين
-- ✅ **حظر وإلغاء حظر المستخدمين**
-- ✅ **إنشاء حسابات أدمن** (بواسطة السوبر أدمن فقط)
-- ✅ **التحكم بالصلاحيات** (User, Admin, Super Admin)
+### Admin Features
+- ✅ **User Management** (CRUD operations)
+- ✅ **Pagination & Filtering** for user lists
+- ✅ **Ban/Unban Users**
+- ✅ **Create Admin Accounts**
+- ✅ **Role-Based Authorization**
 
-### مميزات السوبر أدمن (Super Admin) - 🆕 جديدة
-- ✅ **إنشاء أدمن جدد** - السوبر أدمن فقط يقدر يرفع مستخدم لأدمن
-- ✅ **حذف الأدمنز** - إزالة حسابات الأدمن بأمان
-- ✅ **ترقية وتنزيل المستخدمين** - تغيير صلاحياتهم
-- ✅ **التحكم الكامل** - يتجاوز قيود الأدمن العادي
-- ✅ **مشاهدة كل المستخدمين** - بما فيهم الأدمنز الآخرين
-- ✅ **حظر وإلغاء حظر الأدمنز** - السوبر أدمن يقدر يتحكم في الأدمنز
-- ✅ **تبديل حالة الحظر** (Toggle Ban) بزر واحد
+### Security Features
+- ✅ **bcrypt Password Hashing** (12 rounds)
+- ✅ **JWT Verification Middleware**
+- ✅ **Role-Based Access Control**
+- ✅ **Ban & Deactivation Checks**
+- ✅ **Super Admin Role** (level 2)
+- ✅ **Admin Protection** (admins cannot control other admins)
+- ✅ **Self-ban Prevention**
+- ✅ **Base Service Factory Pattern**
+- ✅ **Refresh Token Rotation** (prevents replay attacks)
+- ✅ **Automatic Token Cleanup** (TTL indexes)
 
-### المميزات الأمنية
-- ✅ **تشفير كلمات المرور** بـ bcrypt (12 rounds)
-- ✅ **التحقق من JWT** Middleware
-- ✅ **التحكم بالصلاحيات** بـ 3 مستويات هرمية
-- ✅ **فحص الحظر والتعطيل** قبل كل عملية
-- ✅ **تدوير Refresh Token** يمنع إعادة استخدام التوكنات المسروقة
-- ✅ **تنظيف تلقائي للتوكنات منتهية الصلاحية** (TTL indexes)
-- ✅ **حماية الأدمنز** - الأدمن العادي لا يستطيع حظر أدمن آخر
-- ✅ **حماية النفس** - المستخدم لا يستطيع حظر نفسه
-- ✅ **حماية السوبر أدمن** - فقط السوبر أدمن يدير الأدمنز
-- ✅ **نظام صلاحيات متكامل** (User < Admin < Super Admin)
+### Validation
+- ✅ **Express-Validator** integration
+- ✅ **Email Uniqueness** validation
+- ✅ **Password Confirmation** matching
+- ✅ **Phone Number Format** validation (Egyptian & Saudi)
+- ✅ **MongoDB ObjectId** validation
 
-### التحقق والصلاحية (Validation)
-- ✅ **Express-Validator** متكامل
-- ✅ **التحقق من تفرد الإيميل**
-- ✅ **تطابق تأكيد كلمة المرور**
-- ✅ **التحقق من صيغة رقم الهاتف** (مصري وسعودي)
-- ✅ **التحقق من صحة MongoDB ObjectId**
-- ✅ **التحقق من الأدوار** (user/admin/super_admin)
+## 📋 Tech Stack
 
-## 📋 التقنيات المستخدمة
+- **Backend:** Node.js, Express.js 5.2.1
+- **Database:** MongoDB with Mongoose 9.2.1
+- **Authentication:** JWT (jsonwebtoken 9.0.3)
+- **Password Hashing:** bcryptjs 3.0.3
+- **Validation:** express-validator 7.3.1
+- **File Upload:** Multer 2.1.0 + Sharp 0.34.5
+- **Image Hosting:** Cloudinary 2.9.0
+- **Email:** Nodemailer 8.0.1
+- **Architecture:** MVC Pattern
 
-- **الخلفية:** Node.js, Express.js 5.2.1
-- **قاعدة البيانات:** MongoDB مع Mongoose 9.2.1
-- **المصادقة:** JWT (jsonwebtoken 9.0.3)
-- **تشفير كلمات المرور:** bcryptjs 3.0.3
-- **التحقق من البيانات:** express-validator 7.3.1
-- **رفع الملفات:** Multer 2.0.2 + Sharp 0.34.5
-- **البريد الإلكتروني:** Nodemailer 8.0.1
-- **الهيكلة:** MVC Pattern + Service Layer
-
-## 🏗️ هيكل المشروع
+## 🏗️ Project Structure
 
 ```
 Platform/
 ├── config/
-│   └── database.js              # اتصال MongoDB
+│   └── database.js              # MongoDB connection
 ├── controllers/
-│   ├── authController.js        # تحكم المصادقة
-│   └── userController.js        # تحكم المستخدمين
+│   ├── authController.js        # Auth controller
+│   └── userController.js        # User controller
 ├── middlewares/
-│   ├── errorMiddleware.js       # معالجة الأخطاء الشاملة
-│   ├── uploadImageMiddleware.js # إعدادات رفع الصور
-│   └── validatorMiddleware.js   # التحقق من البيانات
+│   ├── errorMiddleware.js       # Global error handler
+│   ├── uploadImageMiddleware.js # Multer + Cloudinary configuration
+│   └── validatorMiddleware.js   # Validation middleware
 ├── models/
-│   ├── userModel.js             # مخطط المستخدم (مع super_admin)
-│   └── refreshTokenModel.js     # مخطط توكن التحديث
+│   ├── userModel.js             # User schema (with super_admin role)
+│   └── refreshTokenModel.js     # Refresh token schema
 ├── routes/
-│   ├── authRoute.js             # مسارات المصادقة
-│   └── userRoute.js             # مسارات المستخدمين والأدمن
+│   ├── authRoute.js             # Auth routes
+│   ├── userRoute.js             # User & admin routes
+│   └── index.js                 # Routes index
 ├── services/
-│   ├── authService.js           # منطق المصادقة
-│   ├── userService.js           # منطق المستخدمين
-│   └── baseService.js           # مصنع CRUD أساسي (Factory Pattern)
+│   ├── authService.js           # Auth business logic
+│   ├── baseService.js           # Base CRUD service (Factory Pattern)
+│   └── userService.js           # User business logic
 ├── utils/
-│   ├── apiError.js              # كلاس الخطأ المخصص
-│   ├── apiFeatures.js           # تقسيم الصفحات والفلترة
-│   ├── createToken.js           # إنشاء توكنات JWT
-│   ├── sanitizeData.js          # تنظيف البيانات للرد
-│   ├── sendEmail.js             # إرسال الإيميلات
-│   ├── constants.js             # ثوابت الأدوار والقيم المشتركة
-│   ├── cloudinary.js            # خدمة رفع الصور للسحابة
-│   └── validators/
-│       ├── authValidator.js     # قواعد تحقق المصادقة
-│       └── userValidator.js     # قواعد تحقق المستخدمين
-├── uploads/users/               # تخزين الصور المحلية
-├── config.env                   # متغيرات البيئة
-├── package.json                 # الاعتماديات
-├── server.js                    # نقطة دخول التطبيق
-├── API_DOCUMENTATION.md         # توثيق كامل للـ APIs
-├── QUICK_START.md               # دليل البدء السريع
-└── README.md                    # هذا الملف
+│   ├── apiError.js              # Custom error class
+│   ├── apiFeatures.js           # Pagination & filtering
+│   ├── createToken.js           # JWT token generation
+│   ├── sanitizeData.js           # Response sanitization
+│   ├── sendEmail.js             # Email utility
+│   ├── constants.js             # Role constants & shared values
+│   ├── cloudinary.js            # Cloudinary image service
+│   ├── validators/
+│   │   ├── authValidator.js    # Auth validation rules
+│   │   └── userValidator.js     # User validation rules
+├── validators/
+│   ├── authValidator.js         # Auth validators
+│   └── userValidator.js         # User validators
+├── public/
+│   ├── activation-success.html  # Email verification success page
+│   └── verify-email.html        # Email verification page
+├── config.env                   # Environment variables
+├── package.json                 # Dependencies
+├── server.js                    # Express app entry point
+├── API_DOCUMENTATION.md         # Complete API docs
+├── QUICK_START.md              # Quick start guide
+├── SUMMARY.md                  # Implementation summary
+├── BEFORE_AFTER_COMPARISON.md  # Code changes comparison
+├── routes-doc.json             # Routes documentation JSON
+└── README.md                    # This file
 ```
 
-## 🚦 بداية سريعة
+## 🚦 Quick Start
 
-### المتطلبات الأساسية
-- Node.js مثبت
-- حساب MongoDB Atlas أو MongoDB محلي
-- حساب Gmail (لميزات الإيميل)
+### Prerequisites
+- Node.js installed
+- MongoDB Atlas account or local MongoDB
+- Gmail account (for email features)
+- Cloudinary account (for image hosting)
 
-### التثبيت
+### Installation
 
-1. **استنساخ المستودع**
-```bash
+1. **Clone the repository**
+```
+bash
 git clone <repository-url>
 cd Platform
 ```
 
-2. **تثبيت الاعتماديات**
-```bash
+2. **Install dependencies**
+```
+bash
 npm install
 ```
 
-3. **تكوين متغيرات البيئة**
+3. **Configure environment variables**
 
-قم بتحديث `config.env`:
-```env
+Update `config.env`:
+```
+env
 PORT=3000
 DB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/?appName=Cluster0
 
-JWT_SECRET=your-secret-key-here
-JWT_EXPIRE_TIME=90d
+JWT_SECRET_KEY=your-secret-key-here
+JWT_EXPIRE_TIME=15m
 JWT_REFRESH_SECRET=your-refresh-secret-key-here
-JWT_REFRESH_EXPIRE_TIME=7d
+JWT_REFRESH_EXPIRE_TIME=1d
 
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASSWORD=your-app-password
-
-# وضع التطوير (تفعيل الإيميل تلقائيًا)
 EMAIL_VERIFICATION_REQUIRED=false
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
 ```
 
-4. **إنشاء أول سوبر أدمن (مرة واحدة فقط)**
-```bash
-node utils/createSuperAdmin.js
+4. **Start the server**
 ```
-
-5. **تشغيل السيرفر**
-```bash
+bash
 npm run dev
 ```
 
-السيرفر يعمل على `http://localhost:3000`
+Server runs on `http://localhost:3000`
 
-## 📚 نقاط النهاية (APIs)
+## 📚 Documentation
 
-### المصادقة (9 نقاط)
-- `POST /api/v1/auth/signup` - تسجيل مستخدم جديد
-- `POST /api/v1/auth/login` - تسجيل الدخول
-- `POST /api/v1/auth/refresh` - تجديد التوكن
-- `POST /api/v1/auth/logout` - تسجيل الخروج من جهاز
-- `POST /api/v1/auth/logoutAll` - تسجيل الخروج من كل الأجهزة
-- `GET /api/v1/auth/verifyEmail/:token` - تفعيل الإيميل
-- `POST /api/v1/auth/forgotPassword` - طلب إعادة تعيين كلمة المرور
-- `POST /api/v1/auth/verifyResetCode` - التحقق من كود إعادة التعيين
-- `PUT /api/v1/auth/resetPassword` - إعادة تعيين كلمة المرور
+- **[API Documentation](API_DOCUMENTATION.md)** - Complete API reference with 22+ endpoints
+- **[Quick Start Guide](QUICK_START.md)** - Step-by-step setup and testing guide
+- **[Implementation Summary](SUMMARY.md)** - Detailed implementation checklist
+- **[Code Changes](BEFORE_AFTER_COMPARISON.md)** - Before & after code comparison
 
-### الملف الشخصي (5 نقاط)
-- `GET /api/v1/users/me` - عرض الملف الشخصي
-- `PUT /api/v1/users/me` - تحديث الملف الشخصي
-- `PUT /api/v1/users/me/change-password` - تغيير كلمة المرور
-- `PUT /api/v1/users/me/image` - رفع صورة شخصية
-- `DELETE /api/v1/users/me` - تعطيل الحساب
+## 🔌 API Endpoints
 
-### الأدمن (9 نقاط)
-- `GET /api/v1/users` - عرض كل المستخدمين (مقسم لصفحات)
-- `GET /api/v1/users/:id` - عرض مستخدم واحد
-- `POST /api/v1/users` - إنشاء مستخدم جديد
-- `PUT /api/v1/users/:id` - تحديث مستخدم
-- `DELETE /api/v1/users/:id` - حذف مستخدم
-- `PATCH /api/v1/users/:id/ban` - حظر مستخدم
-- `PATCH /api/v1/users/:id/unban` - إلغاء حظر مستخدم
-- `PATCH /api/v1/users/:id/toggle-ban` - تبديل حالة الحظر
+### Authentication (9 endpoints)
+- `POST /api/v1/auth/signup` - Register new user
+- `POST /api/v1/auth/login` - Login user
+- `POST /api/v1/auth/refresh` - Refresh access token
+- `POST /api/v1/auth/logout` - Logout from device
+- `POST /api/v1/auth/logoutAll` - Logout from all devices
+- `GET /api/v1/auth/verifyEmail/:token` - Verify email
+- `POST /api/v1/auth/forgotPassword` - Request password reset
+- `POST /api/v1/auth/verifyResetCode` - Verify reset code
+- `PUT /api/v1/auth/resetPassword` - Reset password
 
-### السوبر أدمن فقط (3 نقاط)
-- `POST /api/v1/users/admin` - إنشاء أدمن جديد
-- `DELETE /api/v1/users/admin/:id` - حذف أدمن
-- `GET /api/v1/users?role=admin` - عرض كل الأدمنز (مع فلتر)
+### User Profile (5 endpoints)
+- `GET /api/v1/users/me` - Get profile
+- `PUT /api/v1/users/me` - Update profile
+- `PUT /api/v1/users/me/change-password` - Change password
+- `PUT /api/v1/users/me/image` - Upload profile image
+- `DELETE /api/v1/users/me` - Deactivate account
 
-## 🔐 هرمية الصلاحيات
+### Admin (8 endpoints)
+- `GET /api/v1/users` - Get all users (paginated)
+- `GET /api/v1/users/:id` - Get single user
+- `POST /api/v1/users` - Create user
+- `POST /api/v1/users/admin` - Create admin
+- `PUT /api/v1/users/:id` - Update user
+- `DELETE /api/v1/users/:id` - Delete user
+- `PATCH /api/v1/users/:id/ban` - Ban user
+- `PATCH /api/v1/users/:id/unban` - Unban user
+- `PATCH /api/v1/users/:id/toggle-ban` - Toggle ban status
 
-| الدور | المستوى | يمكنه إدارة | لا يمكنه |
-|-------|---------|-------------|----------|
-| **User** | 0 | ملفه الشخصي فقط | حظر، إنشاء أدمن، مشاهدة الآخرين |
-| **Admin** | 1 | المستخدمين العاديين | حظر/تعديل أدمن آخر أو سوبر أدمن |
-| **Super Admin** | 2 | الجميع (بما فيهم الأدمنز) | حظر نفسه |
+### Super Admin Only (3 endpoints)
+- `POST /api/v1/users/admin` - Create new admin
+- `DELETE /api/v1/users/admin/:id` - Delete admin
+- `GET /api/v1/users?role=admin` - Get all admins (with filter)
 
-### مصفوفة الصلاحيات
+## 🔐 Security Best Practices
 
-| الإجراء | User | Admin | Super Admin |
-|---------|------|-------|-------------|
-| عرض ملفه الشخصي | ✅ | ✅ | ✅ |
-| تحديث ملفه الشخصي | ✅ | ✅ | ✅ |
-| حذف حسابه | ✅ | ✅ | ✅ |
-| عرض كل المستخدمين | ❌ | ✅ | ✅ |
-| حظر مستخدم عادي | ❌ | ✅ | ✅ |
-| حظر أدمن آخر | ❌ | ❌ | ✅ |
-| حظر سوبر أدمن | ❌ | ❌ | ❌ |
-| إنشاء أدمن جديد | ❌ | ❌ | ✅ |
-| حذف أدمن | ❌ | ❌ | ✅ |
-| ترقية مستخدم لأدمن | ❌ | ❌ | ✅ |
-| تنزيل أدمن لمستخدم | ❌ | ❌ | ✅ |
-| حظر نفسه | ❌ | ❌ | ❌ |
+### Implemented
+- ✅ Password hashing with bcrypt (12 rounds)
+- ✅ JWT token-based authentication
+- ✅ Refresh token rotation on every refresh
+- ✅ Automatic cleanup of expired tokens (TTL indexes)
+- ✅ Role-based access control
+- ✅ Ban/deactivation checks
+- ✅ Email verification requirement
+- ✅ Input validation on all endpoints
+- ✅ Password change invalidates old tokens
 
-## 🔒 أفضل الممارسات الأمنية
+### Recommended for Production
+- [ ] Rate limiting (express-rate-limit)
+- [ ] Helmet.js for security headers
+- [ ] CORS whitelist configuration
+- [ ] HTTPS enforcement
+- [ ] Request logging (Morgan)
+- [ ] Error tracking (Sentry)
+- [ ] File upload size limits
+- [ ] MongoDB connection encryption
 
-### المطبقة بالفعل
-- ✅ تشفير كلمات المرور بـ bcrypt (12 rounds)
-- ✅ مصادقة قائمة على JWT
-- ✅ تدوير Refresh Token مع كل طلب
-- ✅ تنظيف تلقائي للتوكنات منتهية الصلاحية
-- ✅ 3 مستويات للتحكم بالصلاحيات
-- ✅ حماية الأدمنز (الأدمن لا يتحكم بأدمن آخر)
-- ✅ حماية السوبر أدمن (يدير نفسه فقط)
-- ✅ منع حظر النفس
-- ✅ تفعيل الإيميل إلزامي
-- ✅ التحقق من البيانات في كل نقطة
-- ✅ تغيير كلمة المرور يبطل التوكنات القديمة
+## 🧪 Testing
 
-### مستحسن للإنتاج
-- [ ] تحديد معدل الطلبات (Rate Limiting)
-- [ ] Helmet.js لأمان الرؤوس
-- [ ] تحديد نطاق CORS المسموح
-- [ ] تشغيل HTTPS
-- [ ] تسجيل الطلبات (Morgan)
-- [ ] تتبع الأخطاء (Sentry)
-- [ ] تحديد حجم الملفات المرفوعة
-- [ ] تشفير اتصال MongoDB
+### Manual Testing with Postman
 
-## 🔄 تدفق التوكنات
+1. **Import collection** from API_DOCUMENTATION.md
+2. **Set environment variables:**
+   - `baseUrl`: http://localhost:3000/api/v1
+   - `accessToken`: (set after login)
+   - `refreshToken`: (set after login)
 
-### تدفق تسجيل الدخول
-1. المستخدم يسجل دخوله بالبريد وكلمة المرور
-2. السيرفر يتحقق من البيانات
-3. السيرفر يولد Access Token (15 دقيقة) و Refresh Token (7 أيام)
-4. Refresh Token يُخزن في قاعدة البيانات
-5. كلا التوكنين يُعادان للعميل
+3. **Test authentication flow:**
+   
+```
+   Signup → Verify Email → Login → Get Profile → Refresh Token
+   
+```
 
-### تدفق التجديد
-1. العميل يرسل Refresh Token
-2. السيرفر يتحقق من وجوده في قاعدة البيانات
-3. السيرفر يحذف الـ Refresh Token القديم
-4. السيرفر يولد Access Token و Refresh Token جديدين
-5. كلا التوكنين يُعادان للعميل
+4. **Test admin features:**
+   
+```
+   Create Admin → Login as Admin → Get Users → Ban User
+   
+```
 
-### تدفق تسجيل الخروج
-1. العميل يرسل Refresh Token
-2. السيرفر يحذف الـ Refresh Token من قاعدة البيانات
-3. الـ Access Token يبقى صالحًا حتى انتهاء مدته (15 دقيقة)
+### Automated Testing (Recommended)
+```
+bash
+# Install testing dependencies
+npm install --save-dev jest supertest
 
-## 🛠️ التطوير
+# Run tests
+npm test
+```
 
-### تشغيل سيرفر التطوير
-```bash
+## 📦 Dependencies
+
+```
+json
+{
+  "bcryptjs": "^3.0.3",
+  "cloudinary": "^2.9.0",
+  "cors": "^2.8.6",
+  "crypto": "^1.0.1",
+  "dotenv": "^17.3.1",
+  "express": "^5.2.1",
+  "express-async-handler": "^1.2.0",
+  "express-validator": "^7.3.1",
+  "jsonwebtoken": "^9.0.3",
+  "mongoose": "^9.2.1",
+  "multer": "^2.1.0",
+  "multer-storage-cloudinary": "^4.0.0",
+  "nodemailer": "^8.0.1",
+  "nodemon": "^3.1.14",
+  "sharp": "^0.34.5",
+  "streamifier": "^0.1.1",
+  "uuid": "^13.0.0"
+}
+```
+
+## 🔄 Token Flow
+
+### Login Flow
+1. User logs in with email/password
+2. Server validates credentials
+3. Server generates access token (15 min) and refresh token (1 day)
+4. Refresh token stored in database
+5. Both tokens returned to client
+
+### Refresh Flow
+1. Client sends refresh token
+2. Server validates token from database
+3. Server deletes old refresh token (rotation)
+4. Server generates new access token and refresh token
+5. Both tokens returned to client
+
+### Logout Flow
+1. Client sends refresh token
+2. Server deletes refresh token from database
+3. Access token remains valid until expiry (15 min)
+
+## 🛠️ Development
+
+### Start development server
+```
+bash
 npm run dev
 ```
 
-### إنشاء أول سوبر أدمن
-```bash
-node utils/createSuperAdmin.js
+### Generate JWT secrets
 ```
-
-### إنشاء مفاتيح JWT آمنة
-```bash
+bash
 node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
 
-### اختبار إعدادات الإيميل
-```bash
-node utils/test-email.js
-```
+## 🚀 Deployment
 
-## 🧪 تسلسل الاختبار الموصى به
+### Environment Setup
+1. Set `NODE_ENV=production`
+2. Use strong JWT secrets
+3. Configure MongoDB Atlas
+4. Set up email service
+5. Configure Cloudinary
+6. Enable HTTPS
+7. Configure CORS
 
-1. **تسجيل مستخدم جديد** - اختبار signup
-2. **تسجيل الدخول** - الحصول على التوكنات
-3. **عرض الملف الشخصي** - التحقق من المصادقة
-4. **رفع صورة** - اختبار رفع الملفات
-5. **إنشاء سوبر أدمن** - تشغيل السكريبت مرة واحدة
-6. **تسجيل دخول كسوبر أدمن** - اختبار الصلاحيات المتقدمة
-7. **إنشاء أدمن جديد** - السوبر أدمن ينشئ أدمن
-8. **اختبار القيود** - التحقق من أن الأدمن العادي لا يتحكم بأدمن آخر
-9. **تبديل حالة الحظر** - اختبار toggle-ban
-10. **حذف أدمن** - السوبر أدمن يحذف الأدمن
-
-## 🚀 النشر
-
-### إعدادات البيئة للإنتاج
-1. تعيين `NODE_ENV=production`
-2. استخدام مفاتيح JWT قوية
-3. تكوين MongoDB Atlas
-4. إعداد خدمة البريد الإلكتروني
-5. تشغيل HTTPS
-6. تحديد نطاق CORS المسموح
-
-### منصات النشر المدعومة
+### Deployment Platforms
 - AWS (EC2, Elastic Beanstalk)
 - Heroku
 - DigitalOcean
 - Vercel (serverless)
 - Railway
 
-## 📄 الترخيص
+## 📄 License
 
 MIT License
 
-## 👥 المساهمة
+## 👥 Contributing
 
-1. Fork المستودع
-2. أنشئ فرع الميزة (`git checkout -b feature/AmazingFeature`)
-3. احفظ التغييرات (`git commit -m 'Add some AmazingFeature'`)
-4. ارفع للفرع (`git push origin feature/AmazingFeature`)
-5. افتح Pull Request
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request
 
-## 📞 الدعم
+## 📞 Support
 
-للاستفسارات أو المشاكل:
-1. راجع [توثيق الـ APIs](API_DOCUMENTATION.md)
-2. راجع [دليل البدء السريع](QUICK_START.md)
-3. راجع رسائل الأخطاء في الـ console
-4. تحقق من متغيرات البيئة
-5. تحقق من صلاحيات الأدوار (user/admin/super_admin)
+For issues or questions:
+1. Check [API Documentation](API_DOCUMENTATION.md)
+2. Check [Quick Start Guide](QUICK_START.md)
+3. Check [Implementation Summary](SUMMARY.md)
+4. Review error messages in console
+5. Verify environment variables
 
-## ✨ الحالة
+## ✨ Status
 
-**الإصدار الحالي:** 2.0.0  
-**الحالة:** ✅ جاهز للإنتاج  
-**آخر تحديث:** مارس 2026  
-**المميزات الجديدة:** 
-- ✅ دور السوبر أدمن
-- ✅ نظام حماية الأدمنز المتكامل
-- ✅ نقطة تبديل حالة الحظر (Toggle Ban)
-- ✅ مصنع الخدمة الأساسي (Base Service Factory)
-- ✅ مصفوفة الصلاحيات المحسنة
+**Current Version:** 2.0.0  
+**Status:** ✅ Production Ready  
+**Last Updated:** March 2026  
+**New Features:**
+- ✅ Super Admin role
+- ✅ Enhanced Admin protection system
+- ✅ Toggle ban endpoint
+- ✅ Base Service Factory (CRUD Pattern)
+- ✅ Enhanced permissions matrix
 
 ---
 
-**بُني بحب باستخدام Node.js و Express و MongoDB**
+**Built with ❤️ using Node.js, Express, and MongoDB**

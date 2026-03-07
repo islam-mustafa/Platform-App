@@ -18,12 +18,20 @@ const {
   deleteUser,
   banUser,
   unbanUser,
-  toggleBanUser,     // ✅ الجديدة
+  toggleBanUser,
   
   // دوال السوبر أدمن
-  createAdmin,        // ✅ الجديدة
-  deleteAdmin,        // ✅ الجديدة
+  createAdmin,
+  deleteAdmin,
 } = require('../services/userService');
+
+const {
+  updateMeValidator,
+  changeMyPasswordValidator,
+  userIdValidator,
+  createUserValidator,
+  updateUserValidator,
+} = require('../utils/validators/userValidator');
 
 const { protect, allowedTo } = require('../services/authService');
 const { ROLES } = require('../utils/constants');
@@ -34,8 +42,8 @@ const router = express.Router();
 router.use(protect);
 
 router.get('/me', getMe);
-router.put('/me', updateMe);
-router.put('/me/change-password', changeMyPassword);
+router.put('/me', updateMeValidator, updateMe);
+router.put('/me/change-password', changeMyPasswordValidator, changeMyPassword);
 router.put('/me/image', uploadUserImage, resizeImage, updateMeWithImage);
 router.delete('/me/image', deleteMyImage);
 router.delete('/me', deactivateMe);
@@ -44,18 +52,18 @@ router.delete('/me', deactivateMe);
 router.use(allowedTo(ROLES.ADMIN, ROLES.SUPER_ADMIN));
 
 router.get('/', getUsers);
-router.get('/:id', getUser);
-router.post('/', createUser);
-router.put('/:id', updateUser);
-router.delete('/:id', deleteUser);
-router.patch('/:id/ban', banUser);
-router.patch('/:id/unban', unbanUser);
-router.patch('/:id/toggle-ban', toggleBanUser);  // ✅ الراوت الجديد
+router.get('/:id', userIdValidator, getUser);
+router.post('/', createUserValidator, createUser);
+router.put('/:id', userIdValidator, updateUserValidator, updateUser);
+router.delete('/:id', userIdValidator, deleteUser);
+router.patch('/:id/ban', userIdValidator, banUser);
+router.patch('/:id/unban', userIdValidator, unbanUser);
+router.patch('/:id/toggle-ban', userIdValidator, toggleBanUser);
 
 // ==================== السوبر أدمن فقط ====================
 router.use(allowedTo(ROLES.SUPER_ADMIN));
 
-router.post('/admin', createAdmin);     // ✅ الراوت الجديد
-router.delete('/admin/:id', deleteAdmin); // ✅ الراوت الجديد
+router.post('/admin', createUserValidator, createAdmin); // createUserValidator مناسب لإنشاء أدمن
+router.delete('/admin/:id', userIdValidator, deleteAdmin);
 
 module.exports = router;
