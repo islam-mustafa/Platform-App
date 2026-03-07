@@ -15,9 +15,6 @@ const lessonRoute = require('./routes/lessonRoute');
 // Load environment variables
 dotenv.config({ path: "config.env" });
 
-// Connect to MongoDB
-dbConnection();
-
 // Initialize express app
 const app = express();
 
@@ -26,10 +23,31 @@ app.use(cors());
 
 // Body parser (JSON requests)
 app.use(express.json());
-app.use(express.static('public')); // عشان يقرا ملفات HTML من مجلد public
+app.use(express.static('public'));
+
+// ✅ Middleware للاتصال بقاعدة البيانات (مهم لـ Vercel)
+app.use(async (req, res, next) => {
+  try {
+    await dbConnection();
+    next();
+  } catch (error) {
+    console.error('Database connection failed:', error);
+    next(new ApiError('Database connection failed', 500));
+  }
+});
+
 // Example route
 app.get("/", (req, res) => {
   res.send("Server is running...");
+});
+
+// Health check endpoint (مهم لـ Vercel)
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ 
+    status: "OK", 
+    message: "Server is healthy",
+    time: new Date().toISOString()
+  });
 });
 
 // Mount routes
@@ -48,7 +66,6 @@ app.use((req, res, next) => {
 // Global error handling middleware
 app.use(globalError);
 
-// Start server
 // Start server - modified for Vercel
 const PORT = process.env.PORT || 8000;
 
