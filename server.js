@@ -23,7 +23,6 @@ app.use(cors());
 
 // Body parser (JSON requests)
 app.use(express.json());
-app.use(express.static('public'));
 
 // ✅ Middleware للاتصال بقاعدة البيانات (مهم لـ Vercel)
 app.use(async (req, res, next) => {
