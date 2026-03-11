@@ -7,7 +7,13 @@ const ApiError = require('../utils/apiError');
 const { factory } = require('./baseService');
 const { ROLES } = require('../utils/constants');
 
-const subjectFactory = factory(Subject, 'Subject');
+const subjectFactory = factory(Subject, 'Subject', { 
+  hideInactive: true,
+  cascade: [
+    { model: Section, filter: 'subjectId', message: 'sections' }
+    // Lessons هتتحذف عن طريق cascade في Section Service مش هنا
+  ]
+});
 
 exports.getSubjects = subjectFactory.getAll;
 exports.getSubject = subjectFactory.getOne;

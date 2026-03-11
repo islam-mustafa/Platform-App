@@ -1,12 +1,19 @@
 const Grade = require('../models/gradeModel');
+const Section = require('../models/sectionModel');  
+const Lesson = require('../models/lessonModel');    
 const asyncHandler = require('express-async-handler');
 const ApiError = require('../utils/apiError');
 const { factory } = require('./baseService');
 const { ROLES } = require('../utils/constants');
 
 // استخدام factory للـ CRUD الأساسي
-const gradeFactory = factory(Grade, 'Grade');
-
+const gradeFactory = factory(Grade, 'Grade', { 
+  hideInactive: true,
+  cascade: [
+    { model: Section, filter: 'gradeId', message: 'sections' },
+    { model: Lesson, filter: 'gradeId', message: 'lessons' } // ملاحظة: Lessons مرتبطة بـ Section مش Grade مباشرة
+  ]
+});
 // ==================== دوال CRUD الأساسية ====================
 exports.getGrades = gradeFactory.getAll;
 exports.getGrade = gradeFactory.getOne;
