@@ -11,19 +11,21 @@ const {
   getLessonsBySectionValidator,
   toggleLessonValidator,
   reorderLessonsValidator,
+  purchaseLessonValidator,
 } = require('../utils/validators/lessonValidator');
 
 const router = express.Router();
 
 // ==================== جميع المسارات تحتاج مصادقة ====================
 router.use(protect);
+// ✅ Route اختبارية للتأكد من الفلتر
 
 // ==================== مسارات عامة (للمستخدمين) ====================
 
-// جلب جميع الدروس (مع pagination)
+// جلب جميع الدروس (بدون محتوى نصي للمستخدم العادي)
 router.get('/', lessonService.getLessons);
 
-// جلب درس واحد
+// جلب درس واحد (بدون محتوى نصي للمستخدم العادي)
 router.get('/:id', getLessonValidator, lessonService.getLesson);
 
 // جلب محتوى درس كامل (للمستخدم)
@@ -31,6 +33,9 @@ router.get('/:id/content', getLessonContentValidator, lessonService.getLessonCon
 
 // جلب دروس قسم معين
 router.get('/section/:sectionId', getLessonsBySectionValidator, lessonService.getLessonsBySection);
+
+// شراء درس
+router.post('/:id/purchase', purchaseLessonValidator, lessonService.purchaseLesson);
 
 // ==================== مسارات الأدمن والسوبر أدمن ====================
 router.use(allowedTo(ROLES.ADMIN, ROLES.SUPER_ADMIN));

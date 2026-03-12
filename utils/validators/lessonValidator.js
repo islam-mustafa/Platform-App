@@ -11,7 +11,20 @@ exports.createLessonValidator = [
     .notEmpty()
     .withMessage('Lesson title is required')
     .isLength({ min: 3, max: 200 })
-    .withMessage('Title must be between 3 and 200 characters'),
+    .withMessage('Title must be between 3 and 200 characters')
+    // ✅ منع تكرار اسم الدرس داخل نفس القسم
+    .custom(async (title, { req }) => {
+      const existingLesson = await Lesson.findOne({
+        title: title,
+        sectionId: req.body.sectionId
+      });
+      
+      if (existingLesson) {
+        throw new Error(`Lesson with title "${title}" already exists in this section`);
+      }
+      
+      return true;
+    }),
 
   check('description')
     .optional()
@@ -36,6 +49,22 @@ exports.createLessonValidator = [
     .isInt({ min: 0 })
     .withMessage('Order must be a positive integer'),
 
+  check('isPremium')
+    .optional()
+    .isBoolean()
+    .withMessage('isPremium must be a boolean value'),
+
+  check('price')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Price must be a positive number')
+    .custom((price, { req }) => {
+      if (req.body.isPremium && (!price || price <= 0)) {
+        throw new Error('Price is required for premium lessons');
+      }
+      return true;
+    }),
+
   check('content.videoUrl')
     .optional()
     .isURL()
@@ -45,11 +74,6 @@ exports.createLessonValidator = [
     .optional()
     .isInt({ min: 0 })
     .withMessage('Duration must be a positive integer'),
-
-  check('isFree')
-    .optional()
-    .isBoolean()
-    .withMessage('isFree must be a boolean value'),
 
   validatorMiddleware,
 ];
@@ -71,6 +95,14 @@ exports.getLessonContentValidator = [
 ];
 
 /**
+ * التحقق من شراء درس
+ */
+exports.purchaseLessonValidator = [
+  check('id').isMongoId().withMessage('Invalid Lesson ID format'),
+  validatorMiddleware,
+];
+
+/**
  * التحقق من تحديث درس
  */
 exports.updateLessonValidator = [
@@ -79,17 +111,63 @@ exports.updateLessonValidator = [
   check('title')
     .optional()
     .isLength({ min: 3, max: 200 })
-    .withMessage('Title must be between 3 and 200 characters'),
+    .withMessage('Title must be between 3 and 200 characters')
+    // ✅ منع تكرار اسم الدرس عند التعديل (مع استثناء نفس الدرس)
+    .custom(async (title, { req }) => {
+      const existingLesson = await Lesson.findOne({
+        title: title,
+        sectionId: req.body.sectionId,
+        _id: { $ne: req.params.id }
+      });
+      
+      if (existingLesson) {
+        throw new Error(`Lesson with title "${title}" already exists in this section`);
+      }
+      
+      return true;
+    }),
 
   check('description')
     .optional()
     .isLength({ max: 1000 })
     .withMessage('Description cannot exceed 1000 characters'),
 
+    check('price')
+  .optional()
+  .isFloat({ min: 0 })
+  .withMessage('Price must be a positive number')
+  .custom((price, { req }) => {
+    // لو isPremium موجود و true، لازم price > 0
+    if (req.body.isPremium === true && (!price || price <= 0)) {
+      throw new Error('Price is required for premium lessons');
+    }
+    // لو isPremium موجود و false، لازم price = 0
+    if (req.body.isPremium === false && price && price > 0) {
+      throw new Error('Free lessons cannot have a price');
+    }
+    return true;
+  }),
+
   check('order')
     .optional()
     .isInt({ min: 0 })
     .withMessage('Order must be a positive integer'),
+
+  check('isPremium')
+    .optional()
+    .isBoolean()
+    .withMessage('isPremium must be a boolean value'),
+
+  check('price')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Price must be a positive number')
+    .custom((price, { req }) => {
+      if (req.body.isPremium && (!price || price <= 0)) {
+        throw new Error('Price is required for premium lessons');
+      }
+      return true;
+    }),
 
   check('content.videoUrl')
     .optional()
@@ -100,11 +178,6 @@ exports.updateLessonValidator = [
     .optional()
     .isInt({ min: 0 })
     .withMessage('Duration must be a positive integer'),
-
-  check('isFree')
-    .optional()
-    .isBoolean()
-    .withMessage('isFree must be a boolean value'),
 
   check('isActive')
     .optional()

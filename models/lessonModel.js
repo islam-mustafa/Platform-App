@@ -24,6 +24,21 @@ const lessonSchema = new mongoose.Schema(
       default: 0,
     },
     
+    // ✅ حقول الدفع
+    isPremium: {
+      type: Boolean,
+      default: false,
+    },
+    price: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+    currency: {
+      type: String,
+      default: 'EGP',
+    },
+    
     content: {
       videoUrl: {
         type: String,
@@ -44,9 +59,38 @@ const lessonSchema = new mongoose.Schema(
       },
     },
     
-    isFree: {
-      type: Boolean,
-      default: false,
+    // ✅ الكويز
+    quiz: {
+      isEnabled: { type: Boolean, default: false },
+      timeLimit: { type: Number, min: 0, default: 0 }, // بالدقائق
+      passingScore: { type: Number, min: 0, max: 100, default: 70 },
+      attemptsAllowed: { type: Number, min: 1, default: 3 },
+      questions: [{
+        questionText: { type: String, required: true },
+        type: { 
+          type: String, 
+          enum: ['mcq', 'true_false', 'essay'],
+          default: 'mcq'
+        },
+        options: [{
+          text: String,
+          isCorrect: Boolean
+        }],
+        points: { type: Number, default: 1 }
+      }]
+    },
+    
+    // ✅ الواجب
+    assignment: {
+      isEnabled: { type: Boolean, default: false },
+      dueDate: Date,
+      instructions: String,
+      attachments: [String],
+      submissionType: { 
+        type: String, 
+        enum: ['file', 'text', 'both'],
+        default: 'file'
+      }
     },
     
     isActive: {
@@ -57,7 +101,7 @@ const lessonSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// ✅ Middleware للتحقق من وجود القسم وملء gradeId تلقائيًا
+// ✅ Middleware للتحقق من وجود القسم
 lessonSchema.pre('validate', async function() {
   let next = null;
   for (let i = 0; i < arguments.length; i++) {
@@ -77,6 +121,11 @@ lessonSchema.pre('validate', async function() {
     
     if (!section) {
       return callback(new Error('Section not found'));
+    }
+
+    // ✅ التحقق من أن الدرس المدفوع له سعر
+    if (this.isPremium && (!this.price || this.price <= 0)) {
+      return callback(new Error('Premium lessons must have a price'));
     }
 
     callback();
