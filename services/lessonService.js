@@ -86,8 +86,8 @@ const uploadVideoToCloudinary = (buffer, lessonId) => {
   
     // ✅ نضيف notification_url عشان نعرف لما التحويلات تخلص
     const baseUrl = process.env.BASE_URL || 'https://your-api.com';
-    const notificationUrl = `https://webhook.site/93a56088-83d4-43ec-b29b-c29e73db9feb`;
-    
+    const notificationUrl =  process.env.WEBHOOK_URL || `https://webhook.site/93a56088-83d4-43ec-b29b-c29e73db9feb`;
+    ت
     const options = {
       resource_type: "video",
       folder: "lessons",
@@ -294,12 +294,12 @@ exports.deleteLessonVideo = asyncHandler(async (req, res, next) => {
 
     // 5) حذف الفيديو من المصفوفة
     lesson.videos.splice(videoIndex, 1);
-    await lesson.save();
-
-    // 6) إعادة ترتيب الفيديوهات المتبقية (اختياري)
+    
+    // 6) ✅ إعادة ترتيب الفيديوهات المتبقية
     lesson.videos.forEach((video, index) => {
       video.order = index + 1;
     });
+    
     await lesson.save();
 
     res.status(200).json({
