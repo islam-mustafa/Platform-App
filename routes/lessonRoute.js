@@ -12,6 +12,8 @@ const {
   toggleLessonValidator,
   reorderLessonsValidator,
   purchaseLessonValidator,
+  uploadVideoValidator,
+  deleteVideoValidator
 } = require('../utils/validators/lessonValidator');
 
 const router = express.Router();
@@ -31,6 +33,10 @@ router.get('/:id', getLessonValidator, lessonService.getLesson);
 // جلب محتوى درس كامل (للمستخدم)
 router.get('/:id/content', getLessonContentValidator, lessonService.getLessonContent);
 
+// ✅ تجديد رابط الفيديو (يستخدم أثناء المشاهدة)
+router.post('/:id/refresh-token', getLessonValidator, lessonService.refreshVideoToken);
+
+
 // جلب دروس قسم معين
 router.get('/section/:sectionId', getLessonsBySectionValidator, lessonService.getLessonsBySection);
 
@@ -39,6 +45,21 @@ router.post('/:id/purchase', purchaseLessonValidator, lessonService.purchaseLess
 
 // ==================== مسارات الأدمن والسوبر أدمن ====================
 router.use(allowedTo(ROLES.ADMIN, ROLES.SUPER_ADMIN));
+
+const uploadVideoMiddleware = require('../middlewares/uploadVideoMiddleware');
+
+// ...
+
+router.post('/:id/upload-video', 
+  uploadVideoMiddleware.uploadVideo,  // ✅ لازم يكون قبل Validator
+  uploadVideoValidator, 
+  lessonService.uploadLessonVideo
+);
+
+router.delete('/:lessonId/videos/:videoIndex', 
+  deleteVideoValidator, 
+  lessonService.deleteLessonVideo
+);
 
 // إنشاء درس جديد
 router.post('/', createLessonValidator, lessonService.createLesson);

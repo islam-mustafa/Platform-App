@@ -23,6 +23,24 @@ const lessonSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+
+    // ✅ فيديو Cloudinary (الحقيقي)
+videos: [{
+  publicId: { type: String, required: true },
+  hlsUrl: { type: String },
+  mp4Url: { type: String },
+  duration: { type: Number, default: 0 },
+  thumbnail: { type: String },
+  title: { type: String, default: 'فيديو' },
+  order: { type: Number, default: 0 },
+  processingStatus: { 
+    type: String, 
+    enum: ['pending', 'processing', 'ready', 'failed'],
+    default: 'pending'
+  },
+  processingError: { type: String },
+  eagerNotificationUrl: { type: String } // للتتبع
+}],
     
     // ✅ حقول الدفع
     isPremium: {
@@ -39,11 +57,8 @@ const lessonSchema = new mongoose.Schema(
       default: 'EGP',
     },
     
+    // ✅ المحتوى النصي والملفات (تم إزالة videoUrl)
     content: {
-      videoUrl: {
-        type: String,
-        trim: true,
-      },
       text: {
         type: String,
         trim: true,

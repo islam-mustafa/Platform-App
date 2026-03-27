@@ -11,6 +11,7 @@ const userRoute = require("./routes/userRoute");
 const subjectRoute = require('./routes/subjectRoute');
 const sectionRoute = require('./routes/sectionRoute');
 const lessonRoute = require('./routes/lessonRoute');
+const webhookRoute = require('./routes/webhookRoute');
 
 // Load environment variables
 dotenv.config({ path: "config.env" });
@@ -48,7 +49,6 @@ app.get("/api/health", (req, res) => {
     time: new Date().toISOString()
   });
 });
-
 // Mount routes
 app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/grades", gradeRoute);
@@ -56,6 +56,7 @@ app.use("/api/v1/users", userRoute);
 app.use('/api/v1/subjects', subjectRoute);
 app.use('/api/v1/sections', sectionRoute);
 app.use('/api/v1/lessons', lessonRoute);
+app.use('/api/v1', webhookRoute);
 
 // Handle all undefined routes (Catch-all)
 app.use((req, res, next) => {

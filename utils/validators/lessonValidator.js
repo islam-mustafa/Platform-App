@@ -212,6 +212,23 @@ exports.toggleLessonValidator = [
 ];
 
 /**
+ * التحقق من رفع فيديو للدرس
+ */
+exports.uploadVideoValidator = [
+  check('id').isMongoId().withMessage('Invalid Lesson ID format'),
+  validatorMiddleware,
+];
+
+/**
+ * التحقق من حذف فيديو معين
+ */
+exports.deleteVideoValidator = [
+  check('lessonId').isMongoId().withMessage('Invalid Lesson ID format'),
+  check('videoIndex').isInt({ min: 0 }).withMessage('Video index must be a positive integer'),
+  validatorMiddleware,
+];
+
+/**
  * التحقق من إعادة ترتيب الدروس
  */
 exports.reorderLessonsValidator = [

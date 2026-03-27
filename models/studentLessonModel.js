@@ -21,6 +21,10 @@ const studentLessonSchema = new mongoose.Schema(
     purchasePrice: Number, // السعر عند الشراء
     purchaseCurrency: { type: String, default: 'EGP' },
     
+    accessCount: { type: Number, default: 0 },      // عدد مرات فتح الدرس
+    refreshCount: { type: Number, default: 0 },      // عدد مرات تجديد الرابط
+    lastAccess: Date,                                 // آخر مرة فتح
+
     // ✅ تقدم المشاهدة
     watchedAt: Date,
     completedAt: Date,
