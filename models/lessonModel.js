@@ -25,22 +25,22 @@ const lessonSchema = new mongoose.Schema(
     },
 
     // ✅ فيديو Cloudinary (الحقيقي)
-videos: [{
-  publicId: { type: String, required: true },
-  hlsUrl: { type: String },
-  mp4Url: { type: String },
-  duration: { type: Number, default: 0 },
-  thumbnail: { type: String },
-  title: { type: String, default: 'فيديو' },
-  order: { type: Number, default: 0 },
-  processingStatus: { 
-    type: String, 
-    enum: ['pending', 'processing', 'ready', 'failed'],
-    default: 'pending'
-  },
-  processingError: { type: String },
-  eagerNotificationUrl: { type: String } // للتتبع
-}],
+    videos: [{
+      publicId: { type: String, required: true },
+      hlsUrl: { type: String },
+      mp4Url: { type: String },
+      duration: { type: Number, default: 0 },
+      thumbnail: { type: String },
+      title: { type: String, default: 'فيديو' },
+      order: { type: Number, default: 0 },
+      processingStatus: { 
+        type: String, 
+        enum: ['pending', 'processing', 'ready', 'failed'],
+        default: 'pending'
+      },
+      processingError: { type: String },
+      eagerNotificationUrl: { type: String } // للتتبع
+    }],
     
     // ✅ حقول الدفع
     isPremium: {
@@ -57,7 +57,7 @@ videos: [{
       default: 'EGP',
     },
     
-    // ✅ المحتوى النصي والملفات (تم إزالة videoUrl)
+    // ✅ المحتوى النصي والملفات
     content: {
       text: {
         type: String,
@@ -74,25 +74,12 @@ videos: [{
       },
     },
     
-    // ✅ الكويز
-    quiz: {
-      isEnabled: { type: Boolean, default: false },
-      timeLimit: { type: Number, min: 0, default: 0 }, // بالدقائق
-      passingScore: { type: Number, min: 0, max: 100, default: 70 },
-      attemptsAllowed: { type: Number, min: 1, default: 3 },
-      questions: [{
-        questionText: { type: String, required: true },
-        type: { 
-          type: String, 
-          enum: ['mcq', 'true_false', 'essay'],
-          default: 'mcq'
-        },
-        options: [{
-          text: String,
-          isCorrect: Boolean
-        }],
-        points: { type: Number, default: 1 }
-      }]
+    // ✅ ربط الكويز (علاقة مع موديل Quiz)
+    quizId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Quiz',
+      index: true,
+      default: null
     },
     
     // ✅ الواجب
