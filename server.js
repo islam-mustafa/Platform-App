@@ -12,6 +12,8 @@ const subjectRoute = require('./routes/subjectRoute');
 const sectionRoute = require('./routes/sectionRoute');
 const lessonRoute = require('./routes/lessonRoute');
 const webhookRoute = require('./routes/webhookRoute');
+const quizRoute = require('./routes/quizRoute');
+
 
 // Load environment variables
 dotenv.config({ path: "config.env" });
@@ -57,6 +59,8 @@ app.use('/api/v1/subjects', subjectRoute);
 app.use('/api/v1/sections', sectionRoute);
 app.use('/api/v1/lessons', lessonRoute);
 app.use('/api/v1', webhookRoute);
+app.use('/api/v1', quizRoute);
+
 
 // Handle all undefined routes (Catch-all)
 app.use((req, res, next) => {

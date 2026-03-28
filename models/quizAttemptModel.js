@@ -2,37 +2,28 @@ const mongoose = require('mongoose');
 
 const quizAttemptSchema = new mongoose.Schema(
   {
-    // ✅ من الطالب؟
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'User ID is required'],
       index: true
     },
-
-    // ✅ أي كويز؟
     quizId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Quiz',
       required: [true, 'Quiz ID is required'],
       index: true
     },
-
-    // ✅ رقم المحاولة (1, 2, 3...)
     attemptNumber: {
       type: Number,
       required: true,
       default: 1
     },
-
-    // ✅ حالة المحاولة
     status: {
       type: String,
       enum: ['in_progress', 'completed', 'expired'],
       default: 'in_progress'
     },
-
-    // ✅ وقت البدء والانتهاء
     startedAt: {
       type: Date,
       default: Date.now
@@ -40,14 +31,15 @@ const quizAttemptSchema = new mongoose.Schema(
     completedAt: {
       type: Date
     },
-
-    // ✅ الوقت المستغرق (بالثواني)
+    expiresAt: {
+      type: Date,
+      default: null,
+      index: true
+    },
     timeSpent: {
       type: Number,
       default: 0
     },
-
-    // ✅ الإجابات
     answers: [{
       questionId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -70,8 +62,6 @@ const quizAttemptSchema = new mongoose.Schema(
         trim: true
       }
     }],
-
-    // ✅ النتائج
     score: {
       type: Number,
       default: 0,
@@ -91,8 +81,6 @@ const quizAttemptSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
-
-    // ✅ ملاحظات إضافية
     notes: {
       type: String,
       trim: true
@@ -100,14 +88,12 @@ const quizAttemptSchema = new mongoose.Schema(
   },
   { 
     timestamps: true,
-    // ✅ منع تكرار محاولة غير مكتملة لنفس المستخدم والكويز
     indexes: [
       { userId: 1, quizId: 1, status: 1 }
     ]
   }
 );
 
-// ✅ Indexes للبحث السريع
 quizAttemptSchema.index({ userId: 1, quizId: 1, attemptNumber: 1 }, { unique: true });
 quizAttemptSchema.index({ quizId: 1, passed: 1 });
 quizAttemptSchema.index({ completedAt: -1 });
