@@ -1,382 +1,320 @@
-# Complete Production-Level User & Admin Management System
+# Platform API
 
-A robust, production-ready authentication and user management system built with Node.js, Express, MongoDB, and JWT tokens.
+Backend API لمنصة تعليمية مبنية بـ Node.js وExpress وMongoDB.
 
-## 🚀 Features
+المشروع لم يعد مقتصرًا على إدارة المستخدمين فقط، وأصبح يشمل:
+- نظام مصادقة كامل مع `Access/Refresh Tokens`.
+- إدارة المستخدمين والصلاحيات (`user`, `admin`, `super_admin`).
+- إدارة المحتوى التعليمي: الصفوف، المواد، الأقسام، الدروس.
+- دعم الدروس المجانية والمدفوعة مع شراء الدروس.
+- رفع فيديوهات الدروس على Cloudinary مع Webhook لمعالجة التحويلات.
+- نظام كويز متكامل مع محاولات الطالب ولوحة تحكم للأدمن.
 
-### Authentication System
-- ✅ **JWT Access & Refresh Tokens** with automatic rotation
-- ✅ **User Signup** with email verification
-- ✅ **User Login** with security checks
-- ✅ **Logout** (single device & all devices)
-- ✅ **Token Refresh** with rotation security pattern
-- ✅ **Email Verification** system
-- ✅ **Forgot Password** with 6-digit reset code
-- ✅ **Reset Password** functionality
+## الميزات الحالية
 
-### User Features
-- ✅ **Profile Management** (view, update)
-- ✅ **Password Change** with validation
-- ✅ **Profile Image Upload** with Sharp processing (600x600 JPEG) + Cloudinary storage
-- ✅ **Account Deactivation**
+### 1. Authentication
+- تسجيل مستخدم جديد `signup`.
+- تسجيل دخول `login`.
+- تجديد `access token` عبر `refresh token` مع rotation.
+- تسجيل خروج جهاز واحد أو كل الأجهزة.
+- تفعيل البريد الإلكتروني (مع دعم وضع التطوير لتعطيل الإلزام).
+- استرجاع كلمة المرور بالكود وتعيين كلمة جديدة.
 
-### Admin Features
-- ✅ **User Management** (CRUD operations)
-- ✅ **Pagination & Filtering** for user lists
-- ✅ **Ban/Unban Users**
-- ✅ **Create Admin Accounts**
-- ✅ **Role-Based Authorization**
+### 2. User Management
+- جلب/تعديل بيانات المستخدم الحالي.
+- تغيير كلمة المرور.
+- رفع/حذف صورة البروفايل.
+- تعطيل الحساب الذاتي.
 
-### Security Features
-- ✅ **bcrypt Password Hashing** (12 rounds)
-- ✅ **JWT Verification Middleware**
-- ✅ **Role-Based Access Control**
-- ✅ **Ban & Deactivation Checks**
-- ✅ **Super Admin Role** (level 2)
-- ✅ **Admin Protection** (admins cannot control other admins)
-- ✅ **Self-ban Prevention**
-- ✅ **Base Service Factory Pattern**
-- ✅ **Refresh Token Rotation** (prevents replay attacks)
-- ✅ **Automatic Token Cleanup** (TTL indexes)
+### 3. Admin & Super Admin
+- CRUD للمستخدمين.
+- حظر/فك حظر/تبديل حالة الحظر.
+- حماية من حظر النفس أو إدارة أدمن آخر بدون صلاحية.
+- إنشاء/حذف أدمن (Super Admin فقط).
 
-### Validation
-- ✅ **Express-Validator** integration
-- ✅ **Email Uniqueness** validation
-- ✅ **Password Confirmation** matching
-- ✅ **Phone Number Format** validation (Egyptian & Saudi)
-- ✅ **MongoDB ObjectId** validation
+### 4. Academic Content
+- إدارة الصفوف `Grades`.
+- إدارة المواد `Subjects` مع دعم `hasSections`.
+- إدارة الأقسام `Sections` مع إعادة الترتيب.
+- إدارة الدروس `Lessons` مع إعادة الترتيب وتفعيل/تعطيل.
 
-## 📋 Tech Stack
+### 5. Lesson Video Pipeline
+- رفع فيديو الدرس عبر Cloudinary.
+- حفظ أكثر من فيديو لكل درس.
+- حالات معالجة الفيديو: `pending`, `processing`, `ready`, `failed`.
+- Webhook endpoint لتأكيد اكتمال التحويلات.
+- توليد روابط فيديو موقعة قصيرة العمر للمشاهدة.
 
-- **Backend:** Node.js, Express.js 5.2.1
-- **Database:** MongoDB with Mongoose 9.2.1
-- **Authentication:** JWT (jsonwebtoken 9.0.3)
-- **Password Hashing:** bcryptjs 3.0.3
-- **Validation:** express-validator 7.3.1
-- **File Upload:** Multer 2.1.0 + Sharp 0.34.5
-- **Image Hosting:** Cloudinary 2.9.0
-- **Email:** Nodemailer 8.0.1
-- **Architecture:** MVC Pattern
+### 6. Quiz System
+- كويز واحد لكل درس.
+- بدء محاولة كويز للطالب.
+- تسليم كل الإجابات دفعة واحدة.
+- تتبع المحاولات وحساب النتيجة/النسبة/النجاح.
+- لوحة أدمن لإحصائيات المحاولات.
+- تمديد وقت محاولة فردية أو كل المحاولات النشطة.
+- إعادة تنشيط المحاولات المنتهية وإعادة تعيين محاولات طالب.
 
-## 🏗️ Project Structure
+## Tech Stack
 
-```
+- Node.js
+- Express `^4.18.2`
+- Mongoose `^6.12.0`
+- JWT (`jsonwebtoken ^9.0.3`)
+- bcryptjs `^3.0.3`
+- express-validator `^7.3.1`
+- Multer `^2.1.0`
+- Cloudinary `^1.21.0`
+- Nodemailer `^8.0.1`
+
+## Project Structure
+
+```text
 Platform/
-├── config/
-│   └── database.js              # MongoDB connection
-├── controllers/
-│   ├── authController.js        # Auth controller
-│   └── userController.js        # User controller
-├── middlewares/
-│   ├── errorMiddleware.js       # Global error handler
-│   ├── uploadImageMiddleware.js # Multer + Cloudinary configuration
-│   └── validatorMiddleware.js   # Validation middleware
-├── models/
-│   ├── userModel.js             # User schema (with super_admin role)
-│   └── refreshTokenModel.js     # Refresh token schema
-├── routes/
-│   ├── authRoute.js             # Auth routes
-│   ├── userRoute.js             # User & admin routes
-│   └── index.js                 # Routes index
-├── services/
-│   ├── authService.js           # Auth business logic
-│   ├── baseService.js           # Base CRUD service (Factory Pattern)
-│   └── userService.js           # User business logic
-├── utils/
-│   ├── apiError.js              # Custom error class
-│   ├── apiFeatures.js           # Pagination & filtering
-│   ├── createToken.js           # JWT token generation
-│   ├── sanitizeData.js           # Response sanitization
-│   ├── sendEmail.js             # Email utility
-│   ├── constants.js             # Role constants & shared values
-│   ├── cloudinary.js            # Cloudinary image service
-│   ├── validators/
-│   │   ├── authValidator.js    # Auth validation rules
-│   │   └── userValidator.js     # User validation rules
-├── validators/
-│   ├── authValidator.js         # Auth validators
-│   └── userValidator.js         # User validators
-├── public/
-│   ├── activation-success.html  # Email verification success page
-│   └── verify-email.html        # Email verification page
-├── config.env                   # Environment variables
-├── package.json                 # Dependencies
-├── server.js                    # Express app entry point
-├── API_DOCUMENTATION.md         # Complete API docs
-├── QUICK_START.md              # Quick start guide
-├── SUMMARY.md                  # Implementation summary
-├── BEFORE_AFTER_COMPARISON.md  # Code changes comparison
-├── routes-doc.json             # Routes documentation JSON
-└── README.md                    # This file
+   config/
+      database.js
+   controllers/
+      authController.js
+      userController.js
+   middlewares/
+      errorMiddleware.js
+      uploadImageMiddleware.js
+      uploadVideoMiddleware.js
+      validatorMiddleware.js
+   models/
+      gradeModel.js
+      lessonModel.js
+      quizAttemptModel.js
+      quizModel.js
+      refreshTokenModel.js
+      sectionModel.js
+      studentLessonModel.js
+      subjectModel.js
+      userModel.js
+   routes/
+      authRoute.js
+      gradeRoute.js
+      index.js
+      lessonRoute.js
+      quizRoute.js
+      sectionRoute.js
+      subjectRoute.js
+      userRoute.js
+      webhookRoute.js
+   scripts/
+      migrateVideos.js
+   services/
+      authService.js
+      baseService.js
+      gradeService.js
+      lessonService.js
+      quizService.js
+      sectionService.js
+      subjectService.js
+      userService.js
+   utils/
+      apiError.js
+      apiFeatures.js
+      constants.js
+      createToken.js
+      sanitizeData.js
+      seedUsers.js
+      sendEmail.js
+      validators/
+         authValidator.js
+         gradeValidator.js
+         lessonValidator.js
+         quizValidator.js
+         sectionValidator.js
+         subjectValidator.js
+         userValidator.js
+   config.env
+   package.json
+   README.md
+   routes-doc.json
+   server.js
+   test-email.js
+   vercel.json
 ```
 
-## 🚦 Quick Start
+## Environment Variables
 
-### Prerequisites
-- Node.js installed
-- MongoDB Atlas account or local MongoDB
-- Gmail account (for email features)
-- Cloudinary account (for image hosting)
+أنشئ/حدّث `config.env` بالقيم التالية:
 
-### Installation
+```env
+PORT=8000
+NODE_ENV=development
 
-1. **Clone the repository**
-```
-bash
-git clone <repository-url>
-cd Platform
-```
+DB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/<db>
 
-2. **Install dependencies**
-```
-bash
-npm install
-```
-
-3. **Configure environment variables**
-
-Update `config.env`:
-```
-env
-PORT=3000
-DB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/?appName=Cluster0
-
-JWT_SECRET_KEY=your-secret-key-here
+JWT_SECRET_KEY=<your_access_secret>
 JWT_EXPIRE_TIME=15m
-JWT_REFRESH_SECRET=your-refresh-secret-key-here
-JWT_REFRESH_EXPIRE_TIME=1d
+JWT_REFRESH_SECRET=<your_refresh_secret>
+JWT_REFRESH_EXPIRE_TIME=7d
 
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASSWORD=your-app-password
+EMAIL_USER=<your_email>
+EMAIL_PASSWORD=<your_email_password_or_app_password>
 EMAIL_VERIFICATION_REQUIRED=false
 
-# Cloudinary
-CLOUDINARY_CLOUD_NAME=your-cloud-name
-CLOUDINARY_API_KEY=your-api-key
-CLOUDINARY_API_SECRET=your-api-secret
+CLOUDINARY_CLOUD_NAME=<your_cloud_name>
+CLOUDINARY_API_KEY=<your_cloudinary_key>
+CLOUDINARY_API_SECRET=<your_cloudinary_secret>
+
+BASE_URL=http://localhost:8000
+WEBHOOK_URL=<public_webhook_url_for_cloudinary_notifications>
 ```
 
-4. **Start the server**
-```
-bash
+## Run Locally
+
+```bash
+npm install
 npm run dev
 ```
 
-Server runs on `http://localhost:3000`
+Local base URL:
+- `http://localhost:8000`
 
-## 📚 Documentation
+Health check:
+- `GET /api/health`
 
-- **[API Documentation](API_DOCUMENTATION.md)** - Complete API reference with 22+ endpoints
-- **[Quick Start Guide](QUICK_START.md)** - Step-by-step setup and testing guide
-- **[Implementation Summary](SUMMARY.md)** - Detailed implementation checklist
-- **[Code Changes](BEFORE_AFTER_COMPARISON.md)** - Before & after code comparison
+## Scripts
 
-## 🔌 API Endpoints
+- `npm run dev`: تشغيل بـ nodemon.
+- `npm run start`: تشغيل عادي بـ node.
+- `npm run build`: placeholder build command.
 
-### Authentication (9 endpoints)
-- `POST /api/v1/auth/signup` - Register new user
-- `POST /api/v1/auth/login` - Login user
-- `POST /api/v1/auth/refresh` - Refresh access token
-- `POST /api/v1/auth/logout` - Logout from device
-- `POST /api/v1/auth/logoutAll` - Logout from all devices
-- `GET /api/v1/auth/verifyEmail/:token` - Verify email
-- `POST /api/v1/auth/forgotPassword` - Request password reset
-- `POST /api/v1/auth/verifyResetCode` - Verify reset code
-- `PUT /api/v1/auth/resetPassword` - Reset password
+ملفات مساعدة:
+- `test-email.js`: اختبار إعدادات البريد.
+- `scripts/migrateVideos.js`: سكربت مساعد لهجرة/تعديل بيانات الفيديو.
 
-### User Profile (5 endpoints)
-- `GET /api/v1/users/me` - Get profile
-- `PUT /api/v1/users/me` - Update profile
-- `PUT /api/v1/users/me/change-password` - Change password
-- `PUT /api/v1/users/me/image` - Upload profile image
-- `DELETE /api/v1/users/me` - Deactivate account
+## API Routes Summary
 
-### Admin (8 endpoints)
-- `GET /api/v1/users` - Get all users (paginated)
-- `GET /api/v1/users/:id` - Get single user
-- `POST /api/v1/users` - Create user
-- `POST /api/v1/users/admin` - Create admin
-- `PUT /api/v1/users/:id` - Update user
-- `DELETE /api/v1/users/:id` - Delete user
-- `PATCH /api/v1/users/:id/ban` - Ban user
-- `PATCH /api/v1/users/:id/unban` - Unban user
-- `PATCH /api/v1/users/:id/toggle-ban` - Toggle ban status
+كل الـ routes (عدا العامة المذكورة) تحتاج `Authorization: Bearer <token>`.
 
-### Super Admin Only (3 endpoints)
-- `POST /api/v1/users/admin` - Create new admin
-- `DELETE /api/v1/users/admin/:id` - Delete admin
-- `GET /api/v1/users?role=admin` - Get all admins (with filter)
+### Auth Routes
+- `POST /api/v1/auth/signup`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/refresh`
+- `GET /api/v1/auth/verifyEmail/:token`
+- `POST /api/v1/auth/forgotPassword`
+- `POST /api/v1/auth/verifyResetCode`
+- `PUT /api/v1/auth/resetPassword`
+- `POST /api/v1/auth/logout`
+- `POST /api/v1/auth/logoutAll`
 
-## 🔐 Security Best Practices
+### User Routes
+- `GET /api/v1/users/me`
+- `PUT /api/v1/users/me`
+- `PUT /api/v1/users/me/change-password`
+- `PUT /api/v1/users/me/image`
+- `DELETE /api/v1/users/me/image`
+- `DELETE /api/v1/users/me`
 
-### Implemented
-- ✅ Password hashing with bcrypt (12 rounds)
-- ✅ JWT token-based authentication
-- ✅ Refresh token rotation on every refresh
-- ✅ Automatic cleanup of expired tokens (TTL indexes)
-- ✅ Role-based access control
-- ✅ Ban/deactivation checks
-- ✅ Email verification requirement
-- ✅ Input validation on all endpoints
-- ✅ Password change invalidates old tokens
+Admin/Super Admin:
+- `GET /api/v1/users`
+- `GET /api/v1/users/:id`
+- `POST /api/v1/users`
+- `PUT /api/v1/users/:id`
+- `DELETE /api/v1/users/:id`
+- `PATCH /api/v1/users/:id/ban`
+- `PATCH /api/v1/users/:id/unban`
+- `PATCH /api/v1/users/:id/toggle-ban`
 
-### Recommended for Production
-- [ ] Rate limiting (express-rate-limit)
-- [ ] Helmet.js for security headers
-- [ ] CORS whitelist configuration
-- [ ] HTTPS enforcement
-- [ ] Request logging (Morgan)
-- [ ] Error tracking (Sentry)
-- [ ] File upload size limits
-- [ ] MongoDB connection encryption
+Super Admin فقط:
+- `POST /api/v1/users/admin`
+- `DELETE /api/v1/users/admin/:id`
 
-## 🧪 Testing
+### Grades Routes
+- `GET /api/v1/grades`
+- `GET /api/v1/grades/:id`
+- `POST /api/v1/grades`
+- `PUT /api/v1/grades/:id`
+- `DELETE /api/v1/grades/:id`
+- `PATCH /api/v1/grades/:id/toggle`
 
-### Manual Testing with Postman
+### Subjects Routes
+- `GET /api/v1/subjects`
+- `GET /api/v1/subjects/:id`
+- `GET /api/v1/subjects/:id/structure`
+- `POST /api/v1/subjects`
+- `PUT /api/v1/subjects/:id`
+- `DELETE /api/v1/subjects/:id`
+- `PATCH /api/v1/subjects/:id/toggle`
 
-1. **Import collection** from API_DOCUMENTATION.md
-2. **Set environment variables:**
-   - `baseUrl`: http://localhost:3000/api/v1
-   - `accessToken`: (set after login)
-   - `refreshToken`: (set after login)
+### Sections Routes
+- `GET /api/v1/sections`
+- `GET /api/v1/sections/:id`
+- `POST /api/v1/sections`
+- `PUT /api/v1/sections/:id`
+- `DELETE /api/v1/sections/:id`
+- `PATCH /api/v1/sections/:id/toggle`
+- `POST /api/v1/sections/reorder`
 
-3. **Test authentication flow:**
-   
-```
-   Signup → Verify Email → Login → Get Profile → Refresh Token
-   
-```
+### Lessons Routes
+- `GET /api/v1/lessons`
+- `GET /api/v1/lessons/:id`
+- `GET /api/v1/lessons/:id/content`
+- `POST /api/v1/lessons/:id/refresh-token`
+- `GET /api/v1/lessons/section/:sectionId`
+- `POST /api/v1/lessons/:id/purchase`
 
-4. **Test admin features:**
-   
-```
-   Create Admin → Login as Admin → Get Users → Ban User
-   
-```
+Admin/Super Admin:
+- `POST /api/v1/lessons/:id/upload-video`
+- `DELETE /api/v1/lessons/:lessonId/videos/:videoIndex`
+- `POST /api/v1/lessons`
+- `PUT /api/v1/lessons/:id`
+- `DELETE /api/v1/lessons/:id`
+- `PATCH /api/v1/lessons/:id/toggle`
+- `POST /api/v1/lessons/reorder`
 
-### Automated Testing (Recommended)
-```
-bash
-# Install testing dependencies
-npm install --save-dev jest supertest
+### Quiz Routes
+Student:
+- `GET /api/v1/quiz/lesson/:lessonId`
+- `POST /api/v1/quizzes/:quizId/attempt`
+- `POST /api/v1/attempts/:attemptId/submit-all`
+- `GET /api/v1/quizzes/:quizId/attempts`
 
-# Run tests
-npm test
-```
+Admin/Super Admin:
+- `POST /api/v1/quiz/lesson/:lessonId`
+- `GET /api/v1/quizzes`
+- `GET /api/v1/quizzes/:id`
+- `PUT /api/v1/quizzes/:id`
+- `DELETE /api/v1/quizzes/:id`
+- `GET /api/v1/quizzes/:quizId/attempts/admin`
+- `GET /api/v1/attempts/:attemptId/details`
+- `PATCH /api/v1/attempts/:attemptId/extend`
+- `DELETE /api/v1/quizzes/:quizId/users/:userId/attempts`
+- `PATCH /api/v1/quizzes/:quizId/attempts/extend-all`
+- `PATCH /api/v1/attempts/:attemptId/reactivate`
 
-## 📦 Dependencies
+### Webhook Route
+- `POST /api/v1/webhooks/eager-complete`
 
-```
-json
-{
-  "bcryptjs": "^3.0.3",
-  "cloudinary": "^2.9.0",
-  "cors": "^2.8.6",
-  "crypto": "^1.0.1",
-  "dotenv": "^17.3.1",
-  "express": "^5.2.1",
-  "express-async-handler": "^1.2.0",
-  "express-validator": "^7.3.1",
-  "jsonwebtoken": "^9.0.3",
-  "mongoose": "^9.2.1",
-  "multer": "^2.1.0",
-  "multer-storage-cloudinary": "^4.0.0",
-  "nodemailer": "^8.0.1",
-  "nodemon": "^3.1.14",
-  "sharp": "^0.34.5",
-  "streamifier": "^0.1.1",
-  "uuid": "^13.0.0"
-}
-```
+يستخدم لتلقي إشعارات Cloudinary بعد اكتمال eager transformations والتحقق من التوقيع.
 
-## 🔄 Token Flow
+## Roles & Authorization
 
-### Login Flow
-1. User logs in with email/password
-2. Server validates credentials
-3. Server generates access token (15 min) and refresh token (1 day)
-4. Refresh token stored in database
-5. Both tokens returned to client
+- `user`: استخدام المحتوى والاختبارات حسب الصلاحيات.
+- `admin`: إدارة المستخدمين والمحتوى والاختبارات.
+- `super_admin`: كل صلاحيات الأدمن + إدارة الأدمنات + صلاحيات عليا.
 
-### Refresh Flow
-1. Client sends refresh token
-2. Server validates token from database
-3. Server deletes old refresh token (rotation)
-4. Server generates new access token and refresh token
-5. Both tokens returned to client
+ملاحظة: `super_admin` يمر تلقائيًا في `allowedTo` middleware.
 
-### Logout Flow
-1. Client sends refresh token
-2. Server deletes refresh token from database
-3. Access token remains valid until expiry (15 min)
+## Security Notes
 
-## 🛠️ Development
+- Hashing لكلمات المرور باستخدام bcrypt (`12 rounds`).
+- تخزين refresh tokens في قاعدة البيانات مع `TTL index` للحذف التلقائي.
+- تحقق من حالة المستخدم (`active` / `isBanned`) في middleware الحماية.
+- التحقق من Cloudinary webhook signature لمنع الطلبات المزيفة.
 
-### Start development server
-```
-bash
-npm run dev
-```
+## Deployment
 
-### Generate JWT secrets
-```
-bash
-node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-```
+المشروع مجهز للتشغيل على Vercel:
+- `server.js` يقوم بتصدير `app`.
+- الاتصال بقاعدة البيانات مُدار بحيث يتجنب إعادة الاتصال المتكرر في بيئة serverless.
 
-## 🚀 Deployment
+## ملاحظات مهمة
 
-### Environment Setup
-1. Set `NODE_ENV=production`
-2. Use strong JWT secrets
-3. Configure MongoDB Atlas
-4. Set up email service
-5. Configure Cloudinary
-6. Enable HTTPS
-7. Configure CORS
-
-### Deployment Platforms
-- AWS (EC2, Elastic Beanstalk)
-- Heroku
-- DigitalOcean
-- Vercel (serverless)
-- Railway
-
-## 📄 License
-
-MIT License
-
-## 👥 Contributing
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open Pull Request
-
-## 📞 Support
-
-For issues or questions:
-1. Check [API Documentation](API_DOCUMENTATION.md)
-2. Check [Quick Start Guide](QUICK_START.md)
-3. Check [Implementation Summary](SUMMARY.md)
-4. Review error messages in console
-5. Verify environment variables
-
-## ✨ Status
-
-**Current Version:** 2.0.0  
-**Status:** ✅ Production Ready  
-**Last Updated:** March 2026  
-**New Features:**
-- ✅ Super Admin role
-- ✅ Enhanced Admin protection system
-- ✅ Toggle ban endpoint
-- ✅ Base Service Factory (CRUD Pattern)
-- ✅ Enhanced permissions matrix
-
----
-
-**Built with ❤️ using Node.js, Express, and MongoDB**
+- ملف `routes-doc.json` قد لا يعكس كل الإضافات الجديدة؛ المرجع الأدق هو ملفات `routes/` و`services/`.
+- تم تحديث هذا `README.md` ليتوافق مع الحالة الفعلية للكود حتى مارس 2026.
