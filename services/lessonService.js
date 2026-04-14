@@ -10,7 +10,7 @@ const { factory } = require('./baseService');
 const lessonFactory = factory(Lesson, 'Lesson', { 
   hideInactive: true,
   
-  // ✅ دالة مخصصة لمعالجة المستند قبل الرد في getOne
+  // ✅ دالة مخصصة لمعالجة المستند قبل الرد في getOne (للمستخدم العادي فقط)
   processOne: async (req, res, doc) => {
     // للمستخدم العادي
     if (req.user && req.user.role === 'user') {
@@ -84,10 +84,10 @@ const generateSecureVideoUrl = (publicId, expiresInSeconds = 60) => {
 const uploadVideoToCloudinary = (buffer, lessonId) => {
   return new Promise((resolve, reject) => {
   
-    // ✅ نضيف notification_url عشان نعرف لما التحويلات تخلص
-    const baseUrl = process.env.BASE_URL || 'https://your-api.com';
-    const notificationUrl =  process.env.WEBHOOK_URL || `https://webhook.site/93a56088-83d4-43ec-b29b-c29e73db9feb`;
-    ت
+    // Cloudinary sends webhook to Hookdeck URL, then Hookdeck forwards to local /webhooks/eager-complete
+    const fallbackHookdeckUrl = 'https://hkdk.events/YOUR_HOOKDECK_ENDPOINT';
+    const notificationUrl = process.env.WEBHOOK_URL || fallbackHookdeckUrl;
+    
     const options = {
       resource_type: "video",
       folder: "lessons",
@@ -99,7 +99,7 @@ const uploadVideoToCloudinary = (buffer, lessonId) => {
         { width: 320, height: 180, crop: "pad", format: "jpg" }
       ],
       eager_async: true,
-      eager_notification_url: notificationUrl, // ✅ الأهم هنا
+      eager_notification_url: notificationUrl,
       streaming_profile: "auto"
     };
 
@@ -123,7 +123,6 @@ const uploadVideoToCloudinary = (buffer, lessonId) => {
         resolve({ ...result, newVideo });
       }
     );
-    
     streamifier.createReadStream(buffer).pipe(uploadStream);
   });
 };
@@ -136,10 +135,13 @@ exports.refreshVideoToken = asyncHandler(async (req, res, next) => {
     return next(new ApiError('Lesson not found', 404));
   }
 
-  // ✅ تحقق من وجود فيديو
-  if (!lesson.video?.publicId) {
+  // ✅ تحقق من وجود فيديو (باستخدام المصفوفة videos)
+  if (!lesson.videos || lesson.videos.length === 0) {
     return next(new ApiError('Lesson has no video', 404));
   }
+
+  // خذ أول فيديو (أو يمكن تحديد فيديو معين)
+  const video = lesson.videos[0];
 
   // ✅ لو مجاني، تحقق بس من حالة الدرس
   if (!lesson.isPremium) {
@@ -148,7 +150,7 @@ exports.refreshVideoToken = asyncHandler(async (req, res, next) => {
     }
     
     // ✅ توليد رابط جديد (60 ثانية)
-    const newUrl = generateSecureVideoUrl(lesson.video.publicId, 60);
+    const newUrl = generateSecureVideoUrl(video.publicId, 60);
     return res.json({ 
       status: 'success',
       video: { hlsUrl: newUrl } 
@@ -171,7 +173,7 @@ exports.refreshVideoToken = asyncHandler(async (req, res, next) => {
   await studentLesson.save();
 
   // ✅ توليد رابط جديد (60 ثانية)
-  const newUrl = generateSecureVideoUrl(lesson.video.publicId, 60);
+  const newUrl = generateSecureVideoUrl(video.publicId, 60);
 
   res.json({ 
     status: 'success',
@@ -179,7 +181,6 @@ exports.refreshVideoToken = asyncHandler(async (req, res, next) => {
   });
 });
 
-// ✅ رفع فيديو لدرس معين
 // ✅ رفع فيديو لدرس معين (يضيف للمصفوفة)
 exports.uploadLessonVideo = asyncHandler(async (req, res, next) => {
   console.log('📁 Received file:', req.file ? {
@@ -211,31 +212,47 @@ exports.uploadLessonVideo = asyncHandler(async (req, res, next) => {
     const result = await uploadVideoToCloudinary(req.file.buffer, lesson._id);
 
     console.log('✅ Video uploaded to Cloudinary:', result.public_id);
-    console.log('📨 Notification will be sent to:', result.eagerNotificationUrl);
 
-    // 5) تجهيز بيانات الفيديو الجديد (مع حالة processing)
+    // ✅ إنشاء Thumbnail احترافي بدون حدود بيضاء
+const thumbnailUrl = cloudinary.url(result.public_id, {
+  resource_type: 'video',
+  format: 'jpg',
+  transformation: [
+    {
+      width: 800,
+      height: 800,
+      crop: 'fill',
+      gravity: 'auto'
+    },
+    {
+      start_offset: '2'
+    }
+  ]
+});
+
+    // 5) تجهيز بيانات الفيديو
     const newVideo = {
       publicId: result.public_id,
       hlsUrl: result.playback_url,
       mp4Url: result.secure_url,
       duration: result.duration,
-      thumbnail: result.thumbnail_url || null,
+      thumbnail: thumbnailUrl, // ✅ استخدام الصورة المعدلة
       title: req.body.title || `فيديو ${(lesson.videos?.length || 0) + 1}`,
       order: (lesson.videos?.length || 0) + 1,
-      processingStatus: 'processing',      // ✅ حالة المعالجة
+      processingStatus: 'processing',
       eagerNotificationUrl: result.eagerNotificationUrl
     };
 
-    // 6) إضافة الفيديو للمصفوفة
+    // 6) إضافة الفيديو
     if (!lesson.videos) {
       lesson.videos = [];
     }
     lesson.videos.push(newVideo);
 
-    // 7) حفظ التغييرات
+    // 7) حفظ
     await lesson.save();
 
-    // 8) الرد (فوري) مع تحذير إن الفيديو لسه بيعالج
+    // 8) الرد
     res.status(202).json({
       status: 'accepted',
       message: 'Video uploaded successfully. It is being processed and will be available shortly.',
@@ -243,9 +260,9 @@ exports.uploadLessonVideo = asyncHandler(async (req, res, next) => {
         video: {
           publicId: newVideo.publicId,
           title: newVideo.title,
-          processingStatus: 'processing'
+          processingStatus: 'processing',
+          thumbnail: newVideo.thumbnail
         },
-        notificationUrl: result.eagerNotificationUrl,
         allVideos: lesson.videos
       }
     });
@@ -256,7 +273,7 @@ exports.uploadLessonVideo = asyncHandler(async (req, res, next) => {
   }
 });
 
-// ✅ API endpoint لحذف فيديو
+
 // ✅ حذف فيديو معين من الدرس
 exports.deleteLessonVideo = asyncHandler(async (req, res, next) => {
   const { lessonId, videoIndex } = req.params;
@@ -329,9 +346,47 @@ exports.createLesson = asyncHandler(async (req, res, next) => {
   res.status(201).json({ status: 'success', data: lesson });
 });
 
-// ✅ جلب محتوى درس مع تجديد الرابط المؤمن
+// ✅ جلب درس واحد مع populate (للكويز والواجب)
+exports.getLesson = asyncHandler(async (req, res, next) => {
+  let query = Lesson.findById(req.params.id);
+  
+  // ✅ للمستخدم العادي، لا تظهر المحتوى النصي للدروس المدفوعة
+  if (req.user && req.user.role === 'user') {
+    query = query.select('-content.text');
+  }
+  
+  // ✅ جلب البيانات المرتبطة (الكويز والواجب)
+  const lesson = await query
+    .populate('quizId')        // لجلب بيانات الكويز
+    .populate('assignmentId'); // لجلب بيانات الواجب
+  
+  if (!lesson) {
+    return next(new ApiError('Lesson not found', 404));
+  }
+  
+  // ✅ التحقق من الحظر للمستخدم العادي
+  if (req.user && req.user.role === 'user' && !lesson.isActive) {
+    return next(new ApiError('Lesson not found', 404));
+  }
+  
+  // ✅ للمستخدم العادي، إخفاء المحتوى النصي للدروس المدفوعة
+  if (req.user && req.user.role === 'user') {
+    const lessonObj = lesson.toObject();
+    if (lessonObj.isPremium && lessonObj.content) {
+      delete lessonObj.content.text;
+    }
+    return res.status(200).json({ status: 'success', data: lessonObj });
+  }
+  
+  res.status(200).json({ status: 'success', data: lesson });
+});
+
+// ✅ جلب محتوى درس مع تجديد الرابط المؤمن + populate الكويز والواجب
 exports.getLessonContent = asyncHandler(async (req, res, next) => {
-  const lesson = await Lesson.findById(req.params.id);
+  // ✅ جلب الدرس مع populate الكويز والواجب
+  const lesson = await Lesson.findById(req.params.id)
+    .populate('quizId')        // لجلب بيانات الكويز كاملة
+    .populate('assignmentId'); // لجلب بيانات الواجب كاملة
   
   if (!lesson) {
     return next(new ApiError('Lesson not found', 404));
@@ -532,5 +587,4 @@ exports.reorderLessons = asyncHandler(async (req, res, next) => {
 
 // ==================== استخدام factory للدوال الأساسية ====================
 exports.getLessons = lessonFactory.getAll;
-exports.getLesson = lessonFactory.getOne;
 exports.deleteLesson = lessonFactory.deleteOne;

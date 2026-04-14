@@ -8,11 +8,13 @@ const dbConnection = async () => {
       return mongoose.connection;
     }
 
+    if (!process.env.DB_URI) {
+      throw new Error('DB_URI is not defined in environment variables');
+    }
+
     const conn = await mongoose.connect(process.env.DB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      // ⏱️ مهلة الاتصال (مهم لـ Vercel)
-      serverSelectionTimeoutMS: 5000,
+      // Keep timeouts explicit for faster failure diagnosis in serverless/local runs.
+      serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
     });
     

@@ -13,6 +13,7 @@ const sectionRoute = require('./routes/sectionRoute');
 const lessonRoute = require('./routes/lessonRoute');
 const webhookRoute = require('./routes/webhookRoute');
 const quizRoute = require('./routes/quizRoute');
+const assignmentRoute = require('./routes/assignmentRoute');
 
 
 // Load environment variables
@@ -24,8 +25,12 @@ const app = express();
 // Enable CORS for all routes
 app.use(cors());
 
+// Webhook route must be before express.json() to keep raw body intact
+app.use('/', webhookRoute);
+
 // Body parser (JSON requests)
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // ✅ Middleware للاتصال بقاعدة البيانات (مهم لـ Vercel)
 app.use(async (req, res, next) => {
@@ -58,9 +63,8 @@ app.use("/api/v1/users", userRoute);
 app.use('/api/v1/subjects', subjectRoute);
 app.use('/api/v1/sections', sectionRoute);
 app.use('/api/v1/lessons', lessonRoute);
-app.use('/api/v1', webhookRoute);
 app.use('/api/v1', quizRoute);
-
+app.use('/api/v1', assignmentRoute);
 
 // Handle all undefined routes (Catch-all)
 app.use((req, res, next) => {

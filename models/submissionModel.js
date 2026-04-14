@@ -25,8 +25,34 @@ const submissionSchema = new mongoose.Schema(
       trim: true
     },
     attachments: [{
-      type: String,
-      trim: true
+      filename: {
+        type: String,
+        required: true,
+        trim: true
+      },
+      extension: {
+        type: String,
+        required: true,
+        lowercase: true
+      },
+      mimeType: {
+        type: String,
+        trim: true
+      },
+      url: {
+        type: String,
+        required: true,
+        trim: true
+      },
+      publicId: {
+        type: String,
+        trim: true
+      },
+      size: Number,
+      uploadedAt: {
+        type: Date,
+        default: Date.now
+      }
     }],
     
     // حالة التسليم

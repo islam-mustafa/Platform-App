@@ -63,10 +63,6 @@ const lessonSchema = new mongoose.Schema(
         type: String,
         trim: true,
       },
-      attachments: [{
-        type: String,
-        trim: true,
-      }],
       duration: {
         type: Number,
         min: 0,
@@ -81,19 +77,16 @@ const lessonSchema = new mongoose.Schema(
       index: true,
       default: null
     },
-    
-    // ✅ الواجب
-    assignment: {
-      isEnabled: { type: Boolean, default: false },
-      dueDate: Date,
-      instructions: String,
-      attachments: [String],
-      submissionType: { 
-        type: String, 
-        enum: ['file', 'text', 'both'],
-        default: 'file'
-      }
+
+    // ✅ ربط الواجب (علاقة مع موديل Assignment)
+    assignmentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Assignment',
+      index: true,
+      default: null
     },
+    
+    // ❌ تم إزالة حقل assignment القديم
     
     isActive: {
       type: Boolean,
