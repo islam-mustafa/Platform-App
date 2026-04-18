@@ -2,16 +2,12 @@ const mongoose = require('mongoose');
 
 const quizSchema = new mongoose.Schema(
   {
-    // ✅ ربط الكويز بالدرس (واحد لواحد)
     lessonId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Lesson',
       required: [true, 'Quiz must belong to a lesson'],
-      unique: true, // درس واحد لكل كويز
-      index: true
+      unique: true,  // ✅ هذا ينشئ index تلقائياً
     },
-
-    // ✅ معلومات الكويز
     title: {
       type: String,
       required: [true, 'Quiz title is required'],
@@ -23,41 +19,30 @@ const quizSchema = new mongoose.Schema(
       trim: true,
       maxlength: [1000, 'Description cannot exceed 1000 characters']
     },
-
-    // ✅ إعدادات الكويز
     timeLimit: {
       type: Number,
-      default: 0, // 0 = غير محدد
-      min: 0,
-      help: 'Time limit in minutes'
+      default: 0,
+      min: 0
     },
     passingScore: {
       type: Number,
       default: 70,
       min: 0,
-      max: 100,
-      help: 'Percentage required to pass'
+      max: 100
     },
     attemptsAllowed: {
       type: Number,
       default: 3,
-      min: 1,
-      help: 'Number of attempts allowed'
+      min: 1
     },
-
-    // ✅ إعدادات العرض
     shuffleQuestions: {
       type: Boolean,
-      default: false,
-      help: 'Randomize question order'
+      default: false
     },
     showResults: {
       type: Boolean,
-      default: true,
-      help: 'Show correct answers after completion'
+      default: true
     },
-
-    // ✅ الأسئلة
     questions: [{
       questionText: {
         type: String,
@@ -74,7 +59,6 @@ const quizSchema = new mongoose.Schema(
         default: 1,
         min: 0
       },
-      // للاختيار من متعدد
       options: [{
         text: {
           type: String,
@@ -87,12 +71,9 @@ const quizSchema = new mongoose.Schema(
           default: false
         }
       }],
-      // للإجابة الصحيحة (للصح/خطأ وللاختيار من متعدد)
       correctAnswer: {
-        type: mongoose.Schema.Types.Mixed,
-        help: 'For true/false: boolean, for multiple_choice: option index, for essay: model answer'
+        type: mongoose.Schema.Types.Mixed
       },
-      // شرح الإجابة (يظهر بعد الحل)
       explanation: {
         type: String,
         trim: true
@@ -102,8 +83,6 @@ const quizSchema = new mongoose.Schema(
         default: 0
       }
     }],
-
-    // ✅ حالة الكويز
     isActive: {
       type: Boolean,
       default: true
@@ -116,8 +95,8 @@ const quizSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// ✅ التأكد من وجود lessonId
-quizSchema.index({ lessonId: 1 }, { unique: true });
+// ✅ لا تحتاج هذا السطر (لأن unique: true يخلق index تلقائياً)
+// quizSchema.index({ lessonId: 1 }, { unique: true });
 
 const Quiz = mongoose.models.Quiz || mongoose.model('Quiz', quizSchema);
 module.exports = Quiz;

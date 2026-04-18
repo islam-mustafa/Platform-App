@@ -8,7 +8,6 @@ const assignmentSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Lesson',
       required: [true, 'Assignment must belong to a lesson'],
-      index: true
     },
     
     // معلومات الواجب

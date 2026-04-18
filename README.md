@@ -75,6 +75,15 @@ Health check:
 - `npm start`: تشغيل عادي باستخدام node.
 - `npm run build`: أمر placeholder.
 
+## Local Project Structure File
+
+تمت إضافة ملف محلي باسم `PROJECT_STRUCTURE.md` يحتوي على شجرة ملفات المشروع الحالية لتسهيل المراجعة السريعة.
+
+مهم:
+- الملف مخصص للاستخدام المحلي فقط.
+- الملف متجاهل في Git عبر `.gitignore` حتى لا يتم رفعه إلى GitHub.
+- عند تغيّر هيكل المشروع، حدّث الملف يدويًا حسب الحاجة.
+
 ## Hookdeck + Cloudinary Webhook
 
 التدفق الحالي:

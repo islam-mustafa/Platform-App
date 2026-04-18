@@ -14,7 +14,7 @@ const lessonRoute = require('./routes/lessonRoute');
 const webhookRoute = require('./routes/webhookRoute');
 const quizRoute = require('./routes/quizRoute');
 const assignmentRoute = require('./routes/assignmentRoute');
-
+const paymentRoute = require('./routes/paymentRoute');
 
 // Load environment variables
 dotenv.config({ path: "config.env" });
@@ -25,30 +25,66 @@ const app = express();
 // Enable CORS for all routes
 app.use(cors());
 
-// Webhook route must be before express.json() to keep raw body intact
-app.use('/', webhookRoute);
-
-// Body parser (JSON requests)
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// ✅ Middleware للاتصال بقاعدة البيانات (مهم لـ Vercel)
-app.use(async (req, res, next) => {
+// ============================================================
+// ✅ TEST Webhook endpoint (مباشرة في server.js)
+// ============================================================
+app.post('/webhooks/test/success', express.json(), async (req, res) => {
+  console.log('🧪 TEST: Webhook reached directly in server.js');
+  console.log('Body:', req.body);
+  
+  const { orderId } = req.body;
+  
+  if (!orderId) {
+    return res.status(400).json({ error: 'orderId is required' });
+  }
+  
   try {
     await dbConnection();
-    next();
+    
+    const paymentService = require('./services/paymentService');
+    const StudentLesson = require('./models/studentLessonModel');
+    
+    const result = await paymentService.mockSuccessfulPayment(orderId);
+    
+    if (result && result.userId && result.lessonId) {
+      await StudentLesson.findOneAndUpdate(
+        { userId: result.userId, lessonId: result.lessonId },
+        {
+          hasAccess: true,
+          purchaseDate: new Date(),
+          purchasePrice: result.amount,
+          purchaseCurrency: 'EGP'
+        },
+        { upsert: true }
+      );
+      console.log(`✅ StudentLesson updated for user ${result.userId}, lesson ${result.lessonId}`);
+    }
+    
+    res.status(200).json({ success: true, message: 'Mock payment processed', data: result });
   } catch (error) {
-    console.error('Database connection failed:', error);
-    next(new ApiError('Database connection failed', 500));
+    console.error('Error in test webhook:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Example route
+// ============================================================
+// ✅ Webhook routes (مهم جداً: تكون قبل express.json)
+// ============================================================
+app.use('/', webhookRoute);
+
+// ============================================================
+// ✅ Body parsers (بعد الـ webhook)
+// ============================================================
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ============================================================
+// ✅ Routes العامة (صحة السيرفر)
+// ============================================================
 app.get("/", (req, res) => {
   res.send("Server is running...");
 });
 
-// Health check endpoint (مهم لـ Vercel)
 app.get("/api/health", (req, res) => {
   res.status(200).json({ 
     status: "OK", 
@@ -56,7 +92,10 @@ app.get("/api/health", (req, res) => {
     time: new Date().toISOString()
   });
 });
-// Mount routes
+
+// ============================================================
+// ✅ API Routes
+// ============================================================
 app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/grades", gradeRoute);
 app.use("/api/v1/users", userRoute);
@@ -65,33 +104,55 @@ app.use('/api/v1/sections', sectionRoute);
 app.use('/api/v1/lessons', lessonRoute);
 app.use('/api/v1', quizRoute);
 app.use('/api/v1', assignmentRoute);
+app.use('/api/v1/payment', paymentRoute);
 
-// Handle all undefined routes (Catch-all)
+// ============================================================
+// ✅ معالجة المسارات غير المعروفة (404)
+// ============================================================
 app.use((req, res, next) => {
   next(new ApiError(`Can't find this route: ${req.originalUrl}`, 400));
 });
 
-// Global error handling middleware
+// ============================================================
+// ✅ Global error handling middleware
+// ============================================================
 app.use(globalError);
 
-// Start server - modified for Vercel
+// ============================================================
+// ✅ تشغيل السيرفر (اتصال واحد بقاعدة البيانات)
+// ============================================================
 const PORT = process.env.PORT || 8000;
 
-// فقط للتشغيل المحلي (مش على Vercel)
-if (process.env.NODE_ENV !== 'production') {
-  const server = app.listen(PORT, () => {
-    console.log(`App running on port ${PORT}`);
-  });
-
-  // Handle unhandled promise rejections (للتشغيل المحلي فقط)
-  process.on("unhandledRejection", (err) => {
-    console.error(`UnhandledRejection Error: ${err.name} | ${err.message}`);
-    server.close(() => {
-      console.error("Shutting down...");
-      process.exit(1);
+const startServer = async () => {
+  try {
+    // اتصال واحد بقاعدة البيانات قبل تشغيل السيرفر
+    await dbConnection();
+    console.log('✅ Database connected successfully');
+    
+    const server = app.listen(PORT, () => {
+      console.log(`✅ App running on port ${PORT}`);
+      console.log(`📍 Health check: http://localhost:${PORT}/api/health`);
+      console.log(`📍 Webhook endpoint: http://localhost:${PORT}/webhooks/paymob`);
     });
-  });
-}
 
-// للـ Vercel - لازم نعمل export للتطبيق
+    // Handle unhandled promise rejections
+    process.on("unhandledRejection", (err) => {
+      console.error(`❌ UnhandledRejection Error: ${err.name} | ${err.message}`);
+      server.close(() => {
+        console.error("Shutting down...");
+        process.exit(1);
+      });
+    });
+    
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
+
+// ============================================================
+// ✅ للـ Vercel
+// ============================================================
 module.exports = app;

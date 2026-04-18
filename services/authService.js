@@ -412,9 +412,15 @@ exports.protect = asyncHandler(async (req, res, next) => {
 });
 
 // @desc Authorization (User Permissions)
+// @desc Authorization (User Permissions)
 exports.allowedTo = (...roles) => {
   return async (req, res, next) => {
     try {
+      // ✅ استثناء مسارات الدفع (تسمح لأي مستخدم مسجل)
+      if (req.originalUrl && req.originalUrl.includes('/payment/')) {
+        return next();
+      }
+      
       if (req.user.role === 'super_admin') {
         return next();
       }
@@ -433,7 +439,6 @@ exports.allowedTo = (...roles) => {
     }
   };
 };
-
 
 // @desc    Forgot password
 // @route   Post /api/v1/auth/forgotPassword
