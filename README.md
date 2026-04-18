@@ -9,9 +9,11 @@ Backend API لمنصة تعليمية مبنية باستخدام Node.js + Expr
 - صلاحيات متعددة: `user`, `admin`, `super_admin`.
 - إدارة المحتوى التعليمي: Grades, Subjects, Sections, Lessons.
 - رفع فيديوهات الدروس على Cloudinary.
-- استقبال Webhook من Cloudinary عبر Hookdeck ثم تحديث حالة الفيديو.
+- استقبال Webhooks من Cloudinary وPaymob.
 - نظام Quiz كامل (محاولات، تصحيح، تمديد وقت، إعادة تنشيط).
 - نظام Assignments مع مرفقات وتسليم وتصحيح.
+- نظام Payments لشراء الدروس مع Transactions.
+- نظام Coupons للتخفيضات على شراء الدروس.
 
 ## Tech Stack
 
@@ -48,6 +50,10 @@ EMAIL_VERIFICATION_REQUIRED=false
 CLOUDINARY_CLOUD_NAME=<cloud_name>
 CLOUDINARY_API_KEY=<api_key>
 CLOUDINARY_API_SECRET=<api_secret>
+
+# Paymob (اختياري - عدم الضبط يعني Mock mode)
+PAYMOB_API_KEY=<paymob_api_key>
+PAYMOB_HMAC_SECRET=<paymob_hmac_secret>
 
 # Hookdeck public URL (مهم لويبهوك Cloudinary)
 WEBHOOK_URL=https://hkdk.events/<your-endpoint>
@@ -90,7 +96,7 @@ Health check:
 1. رفع الفيديو إلى Cloudinary من السيرفر.
 2. Cloudinary يرسل webhook إلى Hookdeck URL الموجود في `WEBHOOK_URL`.
 3. Hookdeck يعمل forward إلى السيرفر المحلي:
-   - `POST /webhooks/eager-complete`
+   - `POST /eager-complete`
 4. السيرفر يحدّث حالة الفيديو إلى `ready` داخل `videos.$.processingStatus`.
 
 ### تشغيل Hookdeck CLI
@@ -98,10 +104,19 @@ Health check:
 ```bash
 npm install -g hookdeck-cli
 hookdeck login
-hookdeck listen 3000 --path /webhooks/eager-complete
+hookdeck listen 3000 --path /eager-complete
 ```
 
 بعد تنفيذ `listen`، انسخ رابط `https://hkdk.events/...` وضعه في `WEBHOOK_URL`.
+
+## Paymob Webhook
+
+- endpoint الإنتاجي: `POST /paymob`
+- endpoint اختبار محاكاة نجاح الدفع: `POST /webhooks/test/success`
+- endpoint اختبار محاكاة فشل الدفع: `POST /webhooks/test/failed`
+
+ملاحظة:
+- عند غياب `PAYMOB_API_KEY` أو ضبطه على `test_key` يتم تشغيل Mock mode.
 
 ## API Routes (Current)
 
@@ -111,7 +126,10 @@ hookdeck listen 3000 --path /webhooks/eager-complete
 ### Public / Utility
 - `GET /`
 - `GET /api/health`
-- `POST /webhooks/eager-complete`  (Webhook endpoint)
+- `POST /eager-complete`  (Cloudinary webhook endpoint)
+- `POST /paymob`  (Paymob webhook endpoint)
+- `POST /webhooks/test/success`  (Test payment webhook)
+- `POST /webhooks/test/failed`  (Test payment webhook)
 
 ### Auth (`/api/v1/auth`)
 - `POST /signup`
@@ -214,10 +232,23 @@ hookdeck listen 3000 --path /webhooks/eager-complete
 - `GET /assignments/:assignmentId/submissions`
 - `PATCH /submissions/:submissionId/grade`
 
+### Payments (`/api/v1/payment`)
+- `POST /checkout`
+- `GET /status/:orderId`
+- `GET /transactions`
+
+### Coupons (`/api/v1/coupons`)
+- `POST /`
+- `GET /`
+- `GET /code/:code`
+- `GET /:id`
+- `PUT /:id`
+- `DELETE /:id`
+
 ## ملاحظات تشغيل مهمة
 
 - الـ webhook route مركب قبل `express.json()` حتى يتم استقبال `raw body` بشكل صحيح.
-- endpoint الصحيح للويبهوك هو `POST /webhooks/eager-complete` وليس تحت `/api/v1`.
+- endpoint الصحيح لويبهوك Cloudinary هو `POST /eager-complete` وليس تحت `/api/v1`.
 - إذا ظهر خطأ `EADDRINUSE` فهذا يعني أن المنفذ `3000` مستخدم بالفعل.
 - إذا ظهر timeout في Mongo أثناء webhook test، المشكلة غالبًا من اتصال قاعدة البيانات وليست من الراوت نفسه.
 
