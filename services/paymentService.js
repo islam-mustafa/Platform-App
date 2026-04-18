@@ -1,6 +1,7 @@
 const Transaction = require('../models/transactionModel');
 const ApiError = require('../utils/apiError');
 const { PAYMENT_STATUS, CURRENCY } = require('../utils/constants');
+const couponService = require('./couponService');
 
 const generateMockId = () => {
   return Math.floor(Math.random() * 1000000).toString();
@@ -10,7 +11,7 @@ const generateMockIframeUrl = (paymentKey) => {
   return `https://mock-paymob.example.com/iframe/${paymentKey}`;
 };
 
-exports.createPaymentRequest = async (lesson, user, paymentMethod, idempotencyKey) => {
+exports.createPaymentRequest = async (lesson, user, paymentMethod, idempotencyKey, couponCode = null) => {
   try {
     const existingTransaction = await Transaction.findOne({ idempotencyKey });
     
@@ -27,10 +28,42 @@ exports.createPaymentRequest = async (lesson, user, paymentMethod, idempotencyKe
     const paymentKey = generateMockId();
     const iframeUrl = generateMockIframeUrl(paymentKey);
     
+    // ✅ معالجة الكوبون (لو موجود)
+    let finalAmount = lesson.price;
+    let couponData = null;
+    
+    if (couponCode) {
+      try {
+        const couponResult = await couponService.validateAndApplyCoupon(
+          couponCode,
+          lesson._id.toString(),
+          user._id.toString(),
+          lesson.price
+        );
+        
+        if (couponResult.valid) {
+          finalAmount = couponResult.finalPrice;
+          couponData = {
+            couponId: couponResult.couponId,
+            code: couponResult.code,
+            discountType: couponResult.discountType,
+            discountValue: couponResult.discountValue,
+            discountAmount: couponResult.discountAmount,
+            originalAmount: couponResult.originalPrice,
+            finalAmount: couponResult.finalPrice
+          };
+          console.log(`✅ Coupon ${couponCode} applied: ${lesson.price} → ${finalAmount} EGP`);
+        }
+      } catch (error) {
+        console.error('Coupon validation error:', error.message);
+        throw error;
+      }
+    }
+    
     const transaction = await Transaction.create({
       userId: user._id,
       lessonId: lesson._id,
-      amount: lesson.price,
+      amount: finalAmount,
       currency: lesson.currency || CURRENCY.EGP,
       paymentMethod,
       status: PAYMENT_STATUS.PENDING,
@@ -40,7 +73,8 @@ exports.createPaymentRequest = async (lesson, user, paymentMethod, idempotencyKe
         iframeUrl,
         paymentKey,
         lessonTitle: lesson.title,
-        userEmail: user.email
+        userEmail: user.email,
+        ...(couponData && { coupon: couponData })
       }
     });
     
@@ -49,7 +83,10 @@ exports.createPaymentRequest = async (lesson, user, paymentMethod, idempotencyKe
       orderId,
       paymentKey,
       transactionId: transaction._id,
-      isRetry: false
+      isRetry: false,
+      appliedCoupon: couponData,
+      originalPrice: lesson.price,
+      finalPrice: finalAmount
     };
     
   } catch (error) {
@@ -143,6 +180,18 @@ exports.getTransactionStatus = async (orderId) => {
   };
 };
 
+// ✅ تسجيل استخدام الكوبون بعد الدفع الناجح
+exports.markCouponAsUsed = async (transaction) => {
+  if (transaction.metadata?.coupon?.couponId) {
+    await couponService.markCouponAsUsed(
+      transaction.metadata.coupon.couponId,
+      transaction.userId,
+      transaction.paymobOrderId
+    );
+    console.log(`✅ Coupon ${transaction.metadata.coupon.code} marked as used`);
+  }
+};
+
 exports.mockSuccessfulPayment = async (orderId) => {
   const transaction = await Transaction.findOne({ paymobOrderId: orderId });
   if (!transaction) throw new ApiError('Transaction not found', 404);
@@ -152,6 +201,9 @@ exports.mockSuccessfulPayment = async (orderId) => {
   transaction.paymobTransactionId = `mock_${Date.now()}`;
   transaction.completedAt = new Date();
   await transaction.save();
+  
+  // ✅ تسجيل استخدام الكوبون لو موجود
+  await exports.markCouponAsUsed(transaction);
   
   return {
     userId: transaction.userId,

@@ -15,6 +15,7 @@ const webhookRoute = require('./routes/webhookRoute');
 const quizRoute = require('./routes/quizRoute');
 const assignmentRoute = require('./routes/assignmentRoute');
 const paymentRoute = require('./routes/paymentRoute');
+const couponRoute = require('./routes/couponRoute');
 
 // Load environment variables
 dotenv.config({ path: "config.env" });
@@ -26,10 +27,12 @@ const app = express();
 app.use(cors());
 
 // ============================================================
-// ✅ TEST Webhook endpoint (مباشرة في server.js)
+// ✅ TEST Webhook endpoints (مباشرة في server.js)
 // ============================================================
+
+// محاكاة دفع ناجح
 app.post('/webhooks/test/success', express.json(), async (req, res) => {
-  console.log('🧪 TEST: Webhook reached directly in server.js');
+  console.log('🧪 TEST: Webhook reached directly in server.js (success)');
   console.log('Body:', req.body);
   
   const { orderId } = req.body;
@@ -63,6 +66,33 @@ app.post('/webhooks/test/success', express.json(), async (req, res) => {
     res.status(200).json({ success: true, message: 'Mock payment processed', data: result });
   } catch (error) {
     console.error('Error in test webhook:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// محاكاة دفع فاشل
+app.post('/webhooks/test/failed', express.json(), async (req, res) => {
+  console.log('🧪 TEST: Webhook reached directly in server.js (failed)');
+  console.log('Body:', req.body);
+  
+  const { orderId } = req.body;
+  
+  if (!orderId) {
+    return res.status(400).json({ error: 'orderId is required' });
+  }
+  
+  try {
+    await dbConnection();
+    
+    const paymentService = require('./services/paymentService');
+    
+    const result = await paymentService.mockFailedPayment(orderId);
+    
+    console.log(`❌ Payment failed for order ${orderId}`);
+    
+    res.status(200).json({ success: true, message: 'Mock failed payment processed', data: result });
+  } catch (error) {
+    console.error('Error in test webhook (failed):', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -105,7 +135,7 @@ app.use('/api/v1/lessons', lessonRoute);
 app.use('/api/v1', quizRoute);
 app.use('/api/v1', assignmentRoute);
 app.use('/api/v1/payment', paymentRoute);
-
+app.use('/api/v1/coupons', couponRoute);
 // ============================================================
 // ✅ معالجة المسارات غير المعروفة (404)
 // ============================================================
