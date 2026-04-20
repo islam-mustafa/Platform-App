@@ -44,8 +44,11 @@ router.post('/eager-complete', express.raw({ type: 'application/json' }), async 
 // ============================================================
 // 🟢 Webhook 2: Paymob (معالجة الدفع)
 // ============================================================
+// ============================================================
+// 🟢 Webhook 2: Paymob (معالجة الدفع)
+// ============================================================
 router.post('/paymob', express.raw({ type: 'application/json' }), asyncHandler(async (req, res) => {
-  console.log('📨 Paymob webhook received at:', new Date().toISOString());
+  console.log('🔍 Raw Webhook Body (first 500 chars):', req.body?.toString().substring(0, 500));
   
   let webhookBody;
   let hmacSignature = req.headers['hmac'];
@@ -63,7 +66,8 @@ router.post('/paymob', express.raw({ type: 'application/json' }), asyncHandler(a
     return res.status(400).send('Bad Request');
   }
   
-  console.log('📦 Paymob webhook body:', JSON.stringify(webhookBody, null, 2));
+  console.log('✅ Parsed Webhook Body:', JSON.stringify(webhookBody, null, 2));
+  console.log('📨 Paymob webhook received at:', new Date().toISOString());
   
   const isMockMode = process.env.PAYMOB_API_KEY === 'test_key' || !process.env.PAYMOB_API_KEY;
   
@@ -127,11 +131,8 @@ router.post('/paymob', express.raw({ type: 'application/json' }), asyncHandler(a
           lastPosition: 0
         }
       },
-      { 
-        upsert: true,
-        new: true,
-        setDefaultsOnInsert: true
-      }
+{ returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
+
     );
     
     console.log(`✅ StudentLesson updated successfully`);

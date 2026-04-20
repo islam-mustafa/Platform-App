@@ -100,7 +100,7 @@ app.post('/webhooks/test/failed', express.json(), async (req, res) => {
 // ============================================================
 // ✅ Webhook routes (مهم جداً: تكون قبل express.json)
 // ============================================================
-app.use('/', webhookRoute);
+app.use('/webhooks', webhookRoute);
 
 // ============================================================
 // ✅ Body parsers (بعد الـ webhook)

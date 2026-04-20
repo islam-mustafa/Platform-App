@@ -21,22 +21,24 @@ router.use(protect);
  * @access  Private
  */
 router.post('/checkout', checkoutValidator, asyncHandler(async (req, res, next) => {
-  // 1) استقبال البيانات (lesson تم جلبه من الـ validator)
-  const { lessonId, paymentMethod, couponCode } = req.body;
+  const { lessonId, paymentMethod, couponCode, walletNumber } = req.body; // ✅ أضفنا walletNumber
   const userId = req.user._id;
   const idempotencyKey = req.headers['idempotency-key'];
-  const lesson = req.lesson; // ✅ من الـ validator
-  const existingPendingTransaction = req.existingPendingTransaction; // ✅ من الـ validator
+  const lesson = req.lesson;
+  const existingPendingTransaction = req.existingPendingTransaction;
   
-  // ✅ لو في معاملة معلقة، نرجعها (تم التحقق منها في الـ validator)
+  // ✅ لو في معاملة معلقة، نرجعها
   if (existingPendingTransaction) {
     return res.status(200).json({
       status: 'success',
       message: 'Payment already in progress',
       data: {
         iframeUrl: existingPendingTransaction.metadata?.iframeUrl,
+        redirectUrl: existingPendingTransaction.metadata?.redirectUrl,
+        referenceNumber: existingPendingTransaction.metadata?.referenceNumber,
         orderId: existingPendingTransaction.paymobOrderId,
-        transactionId: existingPendingTransaction._id
+        transactionId: existingPendingTransaction._id,
+        paymentMethod: existingPendingTransaction.paymentMethod
       }
     });
   }
@@ -47,17 +49,30 @@ router.post('/checkout', checkoutValidator, asyncHandler(async (req, res, next) 
     req.user,
     paymentMethod,
     idempotencyKey,
-    couponCode
+    couponCode,
+    walletNumber // ✅ تمرير رقم المحفظة
   );
   
-  // ✅ إرجاع رابط الدفع
+  // ✅ إرجاع البيانات المناسبة لكل طريقة دفع
   res.status(200).json({
     status: 'success',
     message: paymentRequest.isRetry ? 'Request already processed' : 'Payment initiated',
     data: {
-      iframeUrl: paymentRequest.iframeUrl,
+      paymentMethod,
       orderId: paymentRequest.orderId,
       transactionId: paymentRequest.transactionId,
+
+      // بطاقة ائتمان
+      ...(paymentRequest.iframeUrl && { iframeUrl: paymentRequest.iframeUrl }),
+
+      // محفظة موبايل
+      ...(paymentRequest.redirectUrl && { redirectUrl: paymentRequest.redirectUrl }),
+
+      // كاش (فوري/أمان)
+      ...(paymentRequest.referenceNumber && { referenceNumber: paymentRequest.referenceNumber }),
+      ...(paymentRequest.cashData && { cashData: paymentRequest.cashData }),
+
+      // كوبون
       ...(paymentRequest.appliedCoupon && {
         appliedCoupon: paymentRequest.appliedCoupon,
         originalPrice: paymentRequest.originalPrice,

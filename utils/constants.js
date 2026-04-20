@@ -39,7 +39,9 @@ exports.PAYMENT_STATUS = {
 exports.PAYMENT_METHODS = {
   CARD: 'card',
   FAWRY: 'fawry',
-  WALLET: 'wallet'
+  WALLET: 'wallet',
+  CASH: 'cash',
+  MOBILE_WALLET: 'mobile_wallet'
 };
 
 // العملات المدعومة (Currencies)
@@ -56,9 +58,38 @@ exports.ACCESS_SOURCE = {
 };
 
 // ============================================================
+// 💰 Paymob Configuration
+// ============================================================
+
+// أنواع التكامل في Paymob
+exports.PAYMOB_INTEGRATION_TYPES = {
+  CARD: 'card',
+  WALLET: 'wallet',
+  CASH: 'cash'
+};
+
+// Paymob API endpoints
+exports.PAYMOB_API = {
+  AUTH: '/auth/tokens',
+  ORDER: '/ecommerce/orders',
+  PAYMENT_KEY: '/acceptance/payment_keys',
+  IFRAME: '/acceptance/iframes'
+};
+
+// ============================================================
 // 🌐 المسارات العامة (لا تحتاج صلاحيات إضافية)
 // ============================================================
 exports.PUBLIC_ROUTES = ['/payment/', '/webhooks/'];
+
+// ============================================================
+// 💳 وضع الدفع (Payment Mode)
+// ============================================================
+
+// وضع الدفع (mock = تجريبي، real = حقيقي)
+exports.PAYMENT_MODE = {
+  MOCK: 'mock',
+  REAL: 'real'
+};
 
 // ============================================================
 // 📦 ثوابت عامة أخرى

@@ -3,6 +3,7 @@ const validatorMiddleware = require('../../middlewares/validatorMiddleware');
 const Lesson = require('../../models/lessonModel');
 const StudentLesson = require('../../models/studentLessonModel');
 const Transaction = require('../../models/transactionModel');
+const { PAYMENT_METHODS, PAYMENT_STATUS } = require('../../utils/constants');
 
 /**
  * @desc    Validator بدء عملية الدفع (checkout)
@@ -16,25 +17,23 @@ exports.checkoutValidator = [
     .notEmpty().withMessage('Lesson ID is required')
     .isMongoId().withMessage('Invalid lesson ID format')
     .custom(async (lessonId, { req }) => {
-      // التحقق من وجود الدرس
       const lesson = await Lesson.findById(lessonId);
       if (!lesson) {
         throw new Error('Lesson not found');
       }
       
-      // التحقق من أن الدرس مدفوع
       if (!lesson.isPremium) {
         throw new Error('This lesson is free');
       }
       
-      // حفظ الدرس في req للاستخدام لاحقاً
       req.lesson = lesson;
       return true;
     }),
   
   check('paymentMethod')
     .notEmpty().withMessage('Payment method is required')
-    .isIn(['card', 'fawry', 'wallet']).withMessage('Invalid payment method'),
+    .isIn(Object.values(PAYMENT_METHODS))  // ✅ استخدام constants
+    .withMessage(`Invalid payment method. Allowed: ${Object.values(PAYMENT_METHODS).join(', ')}`),
   
   check('couponCode')
     .optional()
@@ -67,11 +66,10 @@ exports.checkoutValidator = [
     const existingPending = await Transaction.findOne({
       userId,
       lessonId,
-      status: 'pending'
+      status: PAYMENT_STATUS.PENDING  // ✅ استخدام constants
     });
     
     if (existingPending) {
-      // تخزين المعاملة المعلقة في req للاستخدام
       req.existingPendingTransaction = existingPending;
     }
     return true;
@@ -95,6 +93,36 @@ exports.getTransactionStatusValidator = [
  * @desc    Validator جلب معاملات المستخدم
  */
 exports.getUserTransactionsValidator = [
-  // لا يحتاج validators إضافية، فقط التأكد من أن المستخدم مسجل دخول (protect)
+  validatorMiddleware,
+];
+
+/**
+ * @desc    Validator إعادة محاولة الدفع (للمعاملات الفاشلة)
+ */
+exports.retryPaymentValidator = [
+  param('orderId')
+    .notEmpty().withMessage('Order ID is required')
+    .isString().withMessage('Order ID must be a string')
+    .custom(async (orderId, { req }) => {
+      const userId = req.user?._id;
+      if (!userId) return true;
+      
+      const transaction = await Transaction.findOne({
+        paymobOrderId: orderId,
+        userId
+      });
+      
+      if (!transaction) {
+        throw new Error('Transaction not found');
+      }
+      
+      if (transaction.status !== PAYMENT_STATUS.FAILED) {  // ✅ استخدام constants
+        throw new Error('Only failed transactions can be retried');
+      }
+      
+      req.existingTransaction = transaction;
+      return true;
+    }),
+  
   validatorMiddleware,
 ];
