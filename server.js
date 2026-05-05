@@ -16,6 +16,7 @@ const quizRoute = require('./routes/quizRoute');
 const assignmentRoute = require('./routes/assignmentRoute');
 const paymentRoute = require('./routes/paymentRoute');
 const couponRoute = require('./routes/couponRoute');
+const cacheRoute = require('./routes/cacheRoute');
 
 // Load environment variables
 dotenv.config({ path: "config.env" });
@@ -136,6 +137,7 @@ app.use('/api/v1', quizRoute);
 app.use('/api/v1', assignmentRoute);
 app.use('/api/v1/payment', paymentRoute);
 app.use('/api/v1/coupons', couponRoute);
+app.use('/api/v1/cache', cacheRoute);
 // ============================================================
 // ✅ معالجة المسارات غير المعروفة (404)
 // ============================================================

@@ -6,7 +6,7 @@ const StudentLesson = require('../models/studentLessonModel');
 const asyncHandler = require('express-async-handler');
 const ApiError = require('../utils/apiError');
 const { factory } = require('./baseService');
-
+const cacheService = require('./cacheService');
 const lessonFactory = factory(Lesson, 'Lesson', { 
   hideInactive: true,
   
@@ -30,23 +30,17 @@ const lessonFactory = factory(Lesson, 'Lesson', {
   // ✅ دالة مخصصة لمعالجة المصفوفة قبل الرد في getAll
   processMany: async (req, res, docs) => {
     // للمستخدم العادي
-    console.log('=================================');
-    console.log('processMany called for', docs.length, 'lessons');
-    console.log('User role:', req.user?.role);
-    
+
     // للمستخدم العادي
     if (req.user && req.user.role === 'user') {
       docs = docs.map(doc => {
-        console.log('Before:', doc._id, 'isPremium:', doc.isPremium);
-        
+
         doc = doc.toObject();
         
         if (doc.isPremium) {
-          console.log('  → Premium lesson, deleting all content');
           delete doc.content;
         } else {
           if (doc.content) {
-            console.log('  → Free lesson, deleting text only');
             delete doc.content.text;
           }
         }
@@ -183,12 +177,7 @@ exports.refreshVideoToken = asyncHandler(async (req, res, next) => {
 
 // ✅ رفع فيديو لدرس معين (يضيف للمصفوفة)
 exports.uploadLessonVideo = asyncHandler(async (req, res, next) => {
-  console.log('📁 Received file:', req.file ? {
-    size: req.file.size,
-    mimetype: req.file.mimetype,
-    originalname: req.file.originalname
-  } : 'No file');
-  
+
   // 1) التحقق من وجود الفيديو
   if (!req.file) {
     return next(new ApiError('Please upload a video file', 400));
@@ -206,12 +195,9 @@ exports.uploadLessonVideo = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    console.log(`📤 Uploading video for lesson: ${lesson.title} (${req.file.size} bytes)`);
 
     // 4) رفع الفيديو على Cloudinary
     const result = await uploadVideoToCloudinary(req.file.buffer, lesson._id);
-
-    console.log('✅ Video uploaded to Cloudinary:', result.public_id);
 
     // ✅ إنشاء Thumbnail احترافي بدون حدود بيضاء
 const thumbnailUrl = cloudinary.url(result.public_id, {
@@ -298,8 +284,7 @@ exports.deleteLessonVideo = asyncHandler(async (req, res, next) => {
 
   try {
     // 4) حذف الفيديو من Cloudinary
-    console.log(`🗑️ Deleting video from Cloudinary: ${videoToDelete.publicId}`);
-    
+
     const result = await cloudinary.uploader.destroy(videoToDelete.publicId, {
       resource_type: "video"
     });
@@ -383,10 +368,33 @@ exports.getLesson = asyncHandler(async (req, res, next) => {
 
 // ✅ جلب محتوى درس مع تجديد الرابط المؤمن + populate الكويز والواجب
 exports.getLessonContent = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+  const userRole = req.user.role;
+  
+  // ✅ بناء مفتاح فريد للكاش (يعتمد على المستخدم ودوره)
+  // للمستخدم العادي: مفتاح يعتمد على user ID عشان الـ hasAccess مختلف
+  // للأدمن: مفتاح عام
+  let cacheKey;
+  if (userRole === 'user') {
+    cacheKey = `lesson_content_user_${userId}_${id}`;
+  } else {
+    cacheKey = `lesson_content_admin_${id}`;
+  }
+  
+  // ✅ حاول تجيب من الكاش
+  let cachedData = cacheService.get(cacheKey);
+  if (cachedData) {
+    console.log(`✅ Cache hit for ${cacheKey}`);
+    return res.status(200).json(cachedData);
+  }
+  
+  console.log(`🔄 Cache miss for ${cacheKey}, fetching from DB...`);
+  
   // ✅ جلب الدرس مع populate الكويز والواجب
-  const lesson = await Lesson.findById(req.params.id)
-    .populate('quizId')        // لجلب بيانات الكويز كاملة
-    .populate('assignmentId'); // لجلب بيانات الواجب كاملة
+  const lesson = await Lesson.findById(id)
+    .populate('quizId')
+    .populate('assignmentId');
   
   if (!lesson) {
     return next(new ApiError('Lesson not found', 404));
@@ -394,18 +402,20 @@ exports.getLessonContent = asyncHandler(async (req, res, next) => {
 
   // ✅ التحقق من حالة الدرس (محظور أو لا)
   if (!lesson.isActive) {
-    if (req.user.role === 'admin' || req.user.role === 'super_admin') {
-      return res.status(200).json({ 
+    if (userRole === 'admin' || userRole === 'super_admin') {
+      const responseData = { 
         data: lesson,
         warning: 'This lesson is inactive (hidden from regular users)'
-      });
+      };
+      cacheService.set(cacheKey, responseData, 300); // 5 دقائق فقط للأدمن
+      return res.status(200).json(responseData);
     }
     return next(new ApiError('Lesson not found', 404));
   }
 
-  // ✅ زيادة عدد مرات المشاهدة (لأي مستخدم)
-  const studentLesson = await StudentLesson.findOneAndUpdate(
-    { userId: req.user._id, lessonId: lesson._id },
+  // ✅ زيادة عدد مرات المشاهدة (لأي مستخدم) - دي متخزنهاش في الكاش
+  await StudentLesson.findOneAndUpdate(
+    { userId, lessonId: id },
     { 
       $inc: { accessCount: 1 },
       $set: { lastAccess: new Date() }
@@ -413,45 +423,39 @@ exports.getLessonContent = asyncHandler(async (req, res, next) => {
     { upsert: true, new: true }
   );
 
-  // ✅ التحقق من حالة الفيديوهات (هل لسه بيعالج؟)
-  if (lesson.videos && lesson.videos.length > 0) {
-    const processingVideos = lesson.videos.filter(v => 
-      v.processingStatus === 'processing' || v.processingStatus === 'pending'
-    );
-    
-    if (processingVideos.length > 0) {
-      return res.status(202).json({ 
-        status: 'processing',
-        message: 'Video is still being processed. Please check back later.',
-        data: lesson
-      });
-    }
-  }
-
   // ✅ لو الدرس مجاني
   if (!lesson.isPremium) {
     // توليد روابط مؤمنة لكل الفيديوهات (60 ثانية)
     if (lesson.videos && lesson.videos.length > 0) {
       lesson.videos = lesson.videos.map(video => {
-        const videoObj = video.toObject();
+        const videoObj = video.toObject ? video.toObject() : video;
         if (videoObj.publicId && videoObj.processingStatus === 'ready') {
           videoObj.hlsUrl = generateSecureVideoUrl(videoObj.publicId, 60);
         }
         return videoObj;
       });
     }
-    return res.status(200).json({ data: lesson });
+    
+    const responseData = { data: lesson };
+    cacheService.set(cacheKey, responseData, 600); // 10 دقائق
+    return res.status(200).json(responseData);
   }
 
   // ✅ لو مدفوع، تحقق من شراء المستخدم
-  if (!studentLesson.hasAccess) {
+  const studentLesson = await StudentLesson.findOne({
+    userId,
+    lessonId: id,
+    hasAccess: true
+  });
+
+  if (!studentLesson) {
     return next(new ApiError('You need to purchase this lesson first', 403));
   }
 
   // ✅ توليد روابط مؤمنة لكل الفيديوهات (60 ثانية)
   if (lesson.videos && lesson.videos.length > 0) {
     lesson.videos = lesson.videos.map(video => {
-      const videoObj = video.toObject();
+      const videoObj = video.toObject ? video.toObject() : video;
       if (videoObj.publicId && videoObj.processingStatus === 'ready') {
         videoObj.hlsUrl = generateSecureVideoUrl(videoObj.publicId, 60);
       }
@@ -459,7 +463,16 @@ exports.getLessonContent = asyncHandler(async (req, res, next) => {
     });
   }
 
-  res.status(200).json({ data: lesson });
+  const responseData = { data: lesson };
+  
+  // ✅ للمستخدم العادي، الكاش له مدة أقل (لأن accessCount بيتغير)
+  if (userRole === 'user') {
+    cacheService.set(cacheKey, responseData, 300); // 5 دقائق
+  } else {
+    cacheService.set(cacheKey, responseData, 600); // 10 دقائق للأدمن
+  }
+  
+  res.status(200).json(responseData);
 });
 
 // ✅ جلب دروس قسم معين

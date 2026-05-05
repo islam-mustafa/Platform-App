@@ -10,7 +10,7 @@ const User = require('../models/userModel');
 
 // Connect to DB
 mongoose.connect(process.env.DB_URI)
-  .then(() => console.log('✅ Database connected for seeding'))
+  .then(() => {})
   .catch(err => {
     console.error('❌ DB Connection Error:', err);
     process.exit(1);
@@ -83,9 +83,6 @@ const seedUsers = async () => {
     // console.log('🗑️  Old users deleted');
 
     await User.insertMany(users);
-    console.log('✅ Users seeded successfully!');
-    console.log('📧 Emails seeded:');
-    users.forEach(u => console.log(`   - ${u.email} / password: ${u.passwordOriginal || 'same as above'}`));
 
     process.exit();
   } catch (error) {

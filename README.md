@@ -1,19 +1,17 @@
 # Platform API
 
-Backend API لمنصة تعليمية مبنية باستخدام Node.js + Express + MongoDB.
+Backend API لمنصة تعليمية مبنية بـ Node.js + Express + MongoDB.
 
 ## نظرة عامة
 
 المشروع يدعم:
-- نظام مصادقة كامل Access/Refresh Token.
+- مصادقة Access/Refresh Token.
 - صلاحيات متعددة: `user`, `admin`, `super_admin`.
 - إدارة المحتوى التعليمي: Grades, Subjects, Sections, Lessons.
-- رفع فيديوهات الدروس على Cloudinary.
-- استقبال Webhooks من Cloudinary وPaymob.
-- نظام Quiz كامل (محاولات، تصحيح، تمديد وقت، إعادة تنشيط).
-- نظام Assignments مع مرفقات وتسليم وتصحيح.
-- نظام Payments لشراء الدروس مع Transactions.
-- نظام Coupons للتخفيضات على شراء الدروس.
+- Quiz system (محاولات، تمديد وقت، إعادة تنشيط).
+- Assignments (رفع مرفقات، تسليم، تصحيح).
+- Payments + Transactions + Coupons.
+- Cloudinary video uploads + Webhooks (Cloudinary وPaymob).
 
 ## Tech Stack
 
@@ -26,9 +24,14 @@ Backend API لمنصة تعليمية مبنية باستخدام Node.js + Expr
 - Cloudinary `^1.21.0`
 - Nodemailer `^8.0.1`
 
-## إعداد البيئة
+## Requirements
 
-أنشئ ملف `config.env` (أو حدّثه) بالقيم التالية:
+- Node.js `>=18`
+- MongoDB (Atlas أو Local)
+
+## Environment Variables
+
+أنشئ ملف `config.env` في جذر المشروع:
 
 ```env
 PORT=3000
@@ -51,85 +54,60 @@ CLOUDINARY_CLOUD_NAME=<cloud_name>
 CLOUDINARY_API_KEY=<api_key>
 CLOUDINARY_API_SECRET=<api_secret>
 
-# Paymob (اختياري - عدم الضبط يعني Mock mode)
+# Paymob
+# عند عدم الضبط أو عند وضع PAYMOB_API_KEY=test_key يتم تشغيل Mock mode
 PAYMOB_API_KEY=<paymob_api_key>
 PAYMOB_HMAC_SECRET=<paymob_hmac_secret>
 
-# Hookdeck public URL (مهم لويبهوك Cloudinary)
+# اختياري: يستخدم في تدفق Webhook الخاص بـ Cloudinary (حسب implementation)
 WEBHOOK_URL=https://hkdk.events/<your-endpoint>
 ```
 
-ملاحظة:
-- إذا لم يتم وضع `WEBHOOK_URL` سيستخدم الكود قيمة fallback داخل `lessonService`.
-
-## التشغيل المحلي
+## Local Setup
 
 ```bash
 npm install
 npm run dev
 ```
 
-Local base URL:
+Default local URL:
 - `http://localhost:3000`
 
 Health check:
 - `GET /api/health`
 
-## Scripts
+## NPM Scripts
 
 - `npm run dev`: تشغيل باستخدام nodemon.
 - `npm start`: تشغيل عادي باستخدام node.
-- `npm run build`: أمر placeholder.
+- `npm run build`: Placeholder command.
 
-## Local Project Structure File
+## Webhooks
 
-تمت إضافة ملف محلي باسم `PROJECT_STRUCTURE.md` يحتوي على شجرة ملفات المشروع الحالية لتسهيل المراجعة السريعة.
+مهم: تم تركيب `app.use('/webhooks', webhookRoute)` قبل `express.json()` لدعم `raw body`.
 
-مهم:
-- الملف مخصص للاستخدام المحلي فقط.
-- الملف متجاهل في Git عبر `.gitignore` حتى لا يتم رفعه إلى GitHub.
-- عند تغيّر هيكل المشروع، حدّث الملف يدويًا حسب الحاجة.
+### Cloudinary webhook
+- `POST /webhooks/eager-complete`
 
-## Hookdeck + Cloudinary Webhook
+### Paymob webhook
+- `POST /webhooks/paymob`
 
-التدفق الحالي:
-1. رفع الفيديو إلى Cloudinary من السيرفر.
-2. Cloudinary يرسل webhook إلى Hookdeck URL الموجود في `WEBHOOK_URL`.
-3. Hookdeck يعمل forward إلى السيرفر المحلي:
-   - `POST /eager-complete`
-4. السيرفر يحدّث حالة الفيديو إلى `ready` داخل `videos.$.processingStatus`.
-
-### تشغيل Hookdeck CLI
-
-```bash
-npm install -g hookdeck-cli
-hookdeck login
-hookdeck listen 3000 --path /eager-complete
-```
-
-بعد تنفيذ `listen`، انسخ رابط `https://hkdk.events/...` وضعه في `WEBHOOK_URL`.
-
-## Paymob Webhook
-
-- endpoint الإنتاجي: `POST /paymob`
-- endpoint اختبار محاكاة نجاح الدفع: `POST /webhooks/test/success`
-- endpoint اختبار محاكاة فشل الدفع: `POST /webhooks/test/failed`
-
-ملاحظة:
-- عند غياب `PAYMOB_API_KEY` أو ضبطه على `test_key` يتم تشغيل Mock mode.
+### Test webhooks (mock)
+- `POST /webhooks/test/success`
+- `POST /webhooks/test/failed`
 
 ## API Routes (Current)
 
-كل المسارات التالية تتبع `server.js` الحالي. المسارات المحمية تحتاج:
+المسارات التالية حسب الملفات الحالية. أغلب المسارات تحتاج:
 `Authorization: Bearer <token>`.
 
 ### Public / Utility
 - `GET /`
 - `GET /api/health`
-- `POST /eager-complete`  (Cloudinary webhook endpoint)
-- `POST /paymob`  (Paymob webhook endpoint)
-- `POST /webhooks/test/success`  (Test payment webhook)
-- `POST /webhooks/test/failed`  (Test payment webhook)
+- `POST /webhooks/eager-complete`
+- `POST /webhooks/paymob`
+- `POST /webhooks/test/success`
+- `POST /webhooks/test/failed`
 
 ### Auth (`/api/v1/auth`)
 - `POST /signup`
@@ -245,15 +223,13 @@ hookdeck listen 3000 --path /eager-complete
 - `PUT /:id`
 - `DELETE /:id`
 
-## ملاحظات تشغيل مهمة
+## Notes
 
-- الـ webhook route مركب قبل `express.json()` حتى يتم استقبال `raw body` بشكل صحيح.
-- endpoint الصحيح لويبهوك Cloudinary هو `POST /eager-complete` وليس تحت `/api/v1`.
-- إذا ظهر خطأ `EADDRINUSE` فهذا يعني أن المنفذ `3000` مستخدم بالفعل.
-- إذا ظهر timeout في Mongo أثناء webhook test، المشكلة غالبًا من اتصال قاعدة البيانات وليست من الراوت نفسه.
+- في وضع Mock للدفع: اضبط `PAYMOB_API_KEY=test_key` أو اتركه بدون قيمة.
+- إذا ظهر `EADDRINUSE` فذلك يعني أن المنفذ مستخدم من عملية أخرى.
+- في اختبار webhooks، أي timeout غالبا يرتبط بالاتصال بقاعدة البيانات.
 
-## نشر المشروع
+## Deployment
 
-المشروع جاهز للنشر على Vercel:
 - `server.js` يصدّر `app`.
-- تشغيل `app.listen` يتم فقط خارج production.
+- حاليًا الكود يقوم بتشغيل السيرفر داخل نفس الملف عبر `startServer()`.

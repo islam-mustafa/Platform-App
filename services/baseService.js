@@ -1,72 +1,117 @@
 const asyncHandler = require('express-async-handler');
 const ApiError = require('../utils/apiError');
 const ApiFeatures = require('../utils/apiFeatures');
+const cacheService = require('./cacheService');
+
 
 exports.factory = (Model, modelName, options = {}) => ({
   
   // ✅ جلب كل المستندات (مع مراعاة الدور ودعم processMany)
   getAll: asyncHandler(async (req, res) => {
-    // بناء الفلتر الأساسي
-    let filter = {};
-    
-    if (options.hideInactive) {
-      if (req.user && req.user.role === 'user') {
-        filter.isActive = true;
-      }
+  // ✅ بناء مفتاح فريد للكاش
+  const cacheKey = `${modelName}_getAll_${JSON.stringify(req.query)}`;
+  
+  // ✅ حاول تجيب من الكاش
+  let cachedData = cacheService.get(cacheKey);
+  if (cachedData) {
+    return res.status(200).json(cachedData);
+  }
+  
+  
+  // بناء الفلتر الأساسي
+  let filter = {};
+  if (options.hideInactive) {
+    if (req.user && req.user.role === 'user') {
+      filter.isActive = true;
     }
-    
-    const queryFilter = { ...filter, ...req.queryFilter };
-    
-    const count = await Model.countDocuments(queryFilter);
-    const apiFeatures = new ApiFeatures(Model.find(queryFilter), req.query)
-      .paginate(count)
-      .filter()
-      .search(modelName)
-      .limitFields()
-      .sort();
+  }
+  
+  const queryFilter = { ...filter, ...req.queryFilter };
+  const count = await Model.countDocuments(queryFilter);
+  const apiFeatures = new ApiFeatures(Model.find(queryFilter), req.query)
+    .paginate(count)
+    .filter()
+    .search(modelName)
+    .limitFields()
+    .sort();
 
-    const docs = await apiFeatures.mongooseQuery;
-    
-    // ✅ لو في processMany مخصص، استخدمه
-    if (options.processMany) {
-      return options.processMany(req, res, docs);
-    }
-    
-    res.status(200).json({
+  const docs = await apiFeatures.mongooseQuery;
+  
+  // ✅ لو في processMany مخصص، استخدمه
+  if (options.processMany) {
+    // ✅ خزّن النتيجة في الكاش أولاً
+    const responseData = {
       status: 'success',
       results: docs.length,
       paginationResult: apiFeatures.paginationResult,
       data: docs,
-    });
-  }),
+    };
+    cacheService.set(cacheKey, responseData, 600);
+    
+    // ✅ بعدين نادي processMany
+    return options.processMany(req, res, docs);
+  }
+  
+  const responseData = {
+    status: 'success',
+    results: docs.length,
+    paginationResult: apiFeatures.paginationResult,
+    data: docs,
+  };
+  
+  cacheService.set(cacheKey, responseData, 600);
+  res.status(200).json(responseData);
+}),
+
 
   // ✅ جلب مستند واحد (مع مراعاة الدور ودعم processOne)
-getOne: asyncHandler(async (req, res, next) => {
-  const doc = await Model.findById(req.params.id);
-  
-  if (!doc) {
-    return next(new ApiError(`${modelName} not found`, 404));
-  }
+  getOne: asyncHandler(async (req, res, next) => {
+    // ✅ بناء مفتاح فريد للكاش
+    const cacheKey = `${modelName}_getOne_${req.params.id}`;
+    
+    // ✅ حاول تجيب من الكاش
+    let cachedData = cacheService.get(cacheKey);
+    
+    if (cachedData) {
+      console.log(`✅ Cache hit for ${cacheKey}`);
+      return res.status(200).json(cachedData);
+    }
+    
+    
+    const doc = await Model.findById(req.params.id);
+    
+    if (!doc) {
+      return next(new ApiError(`${modelName} not found`, 404));
+    }
 
-  // ✅ أولاً: التحقق من الحظر للمستخدم العادي
-  if (options.hideInactive && 
-      req.user && 
-      req.user.role === 'user' && 
-      doc.isActive === false) {
-    return next(new ApiError(`${modelName} not found`, 404));
-  }
+    // ✅ أولاً: التحقق من الحظر للمستخدم العادي
+    if (options.hideInactive && 
+        req.user && 
+        req.user.role === 'user' && 
+        doc.isActive === false) {
+      return next(new ApiError(`${modelName} not found`, 404));
+    }
 
-  // ✅ ثانياً: لو في دالة مخصصة (processOne) شغلها
-  if (options.processOne) {
-    return options.processOne(req, res, doc);
-  }
+    // ✅ ثانياً: لو في دالة مخصصة (processOne) شغلها
+    if (options.processOne) {
+      return options.processOne(req, res, doc);
+    }
 
-  res.status(200).json({ status: 'success', data: doc });
-}),
+    const responseData = { status: 'success', data: doc };
+    
+    // ✅ خزّن النتيجة في الكاش (10 دقائق = 600 ثانية)
+    cacheService.set(cacheKey, responseData, 600);
+    
+    res.status(200).json(responseData);
+  }),
 
   // إنشاء مستند جديد
   createOne: asyncHandler(async (req, res) => {
     const doc = await Model.create(req.body);
+    
+    // ✅ مسح كل الـ getAll cache (لأن الترتيب أو العدد ممكن يتغير)
+    cacheService.delByPrefix(`${modelName}_getAll_`);
+    
     res.status(201).json({ status: 'success', data: doc });
   }),
 
@@ -77,6 +122,13 @@ getOne: asyncHandler(async (req, res, next) => {
       runValidators: true,
     });
     if (!doc) return next(new ApiError(`${modelName} not found`, 404));
+    
+    // ✅ مسح الكاش الخاص بهذا المستند
+    cacheService.del(`${modelName}_getOne_${req.params.id}`);
+    
+    // ✅ مسح كل الـ getAll cache (لأن الترتيب ممكن يتغير)
+    cacheService.delByPrefix(`${modelName}_getAll_`);
+    
     res.status(200).json({ status: 'success', data: doc });
   }),
 
@@ -105,6 +157,13 @@ getOne: asyncHandler(async (req, res, next) => {
     }
 
     await Model.findByIdAndDelete(req.params.id);
+    
+    // ✅ مسح الكاش الخاص بهذا المستند
+    cacheService.del(`${modelName}_getOne_${req.params.id}`);
+    
+    // ✅ مسح كل الـ getAll cache
+    cacheService.delByPrefix(`${modelName}_getAll_`);
+    
     res.status(204).send();
   }),
 });

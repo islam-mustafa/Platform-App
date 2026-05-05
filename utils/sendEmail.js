@@ -1,8 +1,7 @@
 const nodemailer = require('nodemailer');
 
 const sendEmail = async (options) => {
-  console.log('📧 Preparing to send email to:', options.email);
-  
+
   // ✅ 1. التحقق من وجود المتغيرات البيئية
   const requiredEnvVars = ['EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_USER', 'EMAIL_PASSWORD'];
   const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
@@ -15,13 +14,6 @@ const sendEmail = async (options) => {
   // ✅ 2. تحويل البورت إلى رقم وتحديد secure بناءً عليه
   const port = parseInt(process.env.EMAIL_PORT);
   const secure = port === 465; // true فقط للبورت 465
-  
-  console.log('📧 Configuration:', {
-    host: process.env.EMAIL_HOST,
-    port: port,
-    secure: secure,
-    user: process.env.EMAIL_USER ? '****' : 'missing',
-  });
 
   // ✅ 3. Create transporter
   const transporter = nodemailer.createTransport({
@@ -46,9 +38,7 @@ const sendEmail = async (options) => {
   };
 
   // ✅ 5. Send email
-  console.log('📧 Sending...');
   const info = await transporter.sendMail(mailOpts);
-  console.log('✅ Email sent successfully:', info.messageId);
   
   return info;
 };

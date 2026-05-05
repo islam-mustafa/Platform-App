@@ -48,8 +48,7 @@ router.post('/eager-complete', express.raw({ type: 'application/json' }), async 
 // 🟢 Webhook 2: Paymob (معالجة الدفع)
 // ============================================================
 router.post('/paymob', express.raw({ type: 'application/json' }), asyncHandler(async (req, res) => {
-  console.log('🔍 Raw Webhook Body (first 500 chars):', req.body?.toString().substring(0, 500));
-  
+
   let webhookBody;
   let hmacSignature = req.headers['hmac'];
   
@@ -66,16 +65,13 @@ router.post('/paymob', express.raw({ type: 'application/json' }), asyncHandler(a
     return res.status(400).send('Bad Request');
   }
   
-  console.log('✅ Parsed Webhook Body:', JSON.stringify(webhookBody, null, 2));
-  console.log('📨 Paymob webhook received at:', new Date().toISOString());
-  
+
   const isMockMode = process.env.PAYMOB_API_KEY === 'test_key' || !process.env.PAYMOB_API_KEY;
   
   let paymentResult;
   
   if (isMockMode) {
-    console.log('🟡 Running in MOCK mode - using mock webhook processing');
-    
+
     const { orderId, success, paymobTransactionId } = webhookBody;
     
     if (!orderId) {
@@ -96,7 +92,6 @@ router.post('/paymob', express.raw({ type: 'application/json' }), asyncHandler(a
         console.error('❌ Invalid HMAC signature - possible fraud attempt');
         return res.status(401).send('Unauthorized');
       }
-      console.log('✅ HMAC signature verified');
     }
     
     const paymobData = webhookBody.obj || webhookBody;
@@ -114,9 +109,7 @@ router.post('/paymob', express.raw({ type: 'application/json' }), asyncHandler(a
   
   if (paymentResult.processed && paymentResult.success && paymentResult.transaction) {
     const { userId, lessonId, amount } = paymentResult.transaction;
-    
-    console.log(`✅ Updating StudentLesson: user=${userId}, lesson=${lessonId}`);
-    
+
     await StudentLesson.findOneAndUpdate(
       { userId, lessonId },
       {
@@ -134,8 +127,6 @@ router.post('/paymob', express.raw({ type: 'application/json' }), asyncHandler(a
 { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
 
     );
-    
-    console.log(`✅ StudentLesson updated successfully`);
   }
   
   res.status(200).send('OK');
@@ -178,8 +169,7 @@ function verifyPaymobHmac(body, receivedHmac) {
       return res.status(400).json({ error: 'orderId is required' });
     }
     
-    console.log(`🧪 TEST: Simulating successful payment for order ${orderId}`);
-    
+
     const result = await paymentService.mockSuccessfulPayment(orderId);
     
     if (result && result.userId && result.lessonId) {
@@ -206,8 +196,7 @@ function verifyPaymobHmac(body, receivedHmac) {
       return res.status(400).json({ error: 'orderId is required' });
     }
     
-    console.log(`🧪 TEST: Simulating failed payment for order ${orderId}`);
-    
+
     const result = await paymentService.mockFailedPayment(orderId);
     
     res.status(200).json({ success: true, message: 'Mock failed payment processed', data: result });

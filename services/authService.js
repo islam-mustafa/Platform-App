@@ -43,15 +43,13 @@ const createAndStoreRefreshToken = async (userId) => {
 // @route   POST /api/v1/auth/signup
 // @access  Public
 exports.signup = asyncHandler(async (req, res, next) => {
-  console.log('📍 [1] Signup started');
-  
+
   try {
     // التحقق من تطابق كلمة المرور
     if (req.body.password !== req.body.passwordConfirm) {
       return next(new ApiError('Password and password confirmation do not match', 400));
     }
     
-    console.log('📍 [3] Creating user...');
     const user = await User.create({
       name: req.body.name,
       email: req.body.email,
@@ -60,11 +58,9 @@ exports.signup = asyncHandler(async (req, res, next) => {
       parentPhone: req.body.parentPhone,
       role: req.body.role || 'user',
     });
-    console.log('📍 [4] User created:', user._id);
 
     // ✅ Dev mode: Auto-verify email
     if (process.env.EMAIL_VERIFICATION_REQUIRED === 'false') {
-      console.log('📍 [Dev Mode] Auto-verifying email...');
       user.emailVerified = true;
       await user.save({ validateBeforeSave: false });
       
@@ -84,7 +80,6 @@ exports.signup = asyncHandler(async (req, res, next) => {
     }
 
     // ✅ Production mode: Send verification email
-    console.log('📍 [5] Creating verification token...');
     const verificationToken = crypto.randomBytes(32).toString("hex");
     const hashedToken = crypto
       .createHash("sha256")
@@ -94,23 +89,18 @@ exports.signup = asyncHandler(async (req, res, next) => {
     user.emailVerificationToken = hashedToken;
     user.emailVerificationExpires = Date.now() + 10 * 60 * 1000;
     
-    console.log('📍 [6] Saving user with verification token...');
     await user.save({ validateBeforeSave: false });
-    console.log('📍 [7] User saved with token');
 
     const verificationUrl = `${req.protocol}://${req.get(
       "host"
     )}/api/v1/auth/verifyEmail/${verificationToken}`;
 
-    console.log('📍 [8] Sending email...');
     await sendEmail({
       email: user.email,
       subject: "Verify your email",
       message: `Verify your email using this link:\n${verificationUrl}\n\nThis link expires in 10 minutes`,
     });
-    console.log('📍 [9] Email sent');
 
-    console.log('📍 [10] Sending response');
     res.status(201).json({
       status: "success",
       message: "User created successfully, please verify email",
@@ -130,8 +120,7 @@ exports.signup = asyncHandler(async (req, res, next) => {
  * @access  Public
  */
 exports.login = asyncHandler(async (req, res, next) => {
-  console.log('[Login] Attempting login for email:', req.body.email);
-  
+
   // Find user and select password field
   const user = await User.findOne({ email: req.body.email }).select("+password");
 
@@ -185,7 +174,6 @@ exports.login = asyncHandler(async (req, res, next) => {
       user: user._id,
       expiresAt: { $lte: new Date() },
     });
-    console.log('[Login] Expired tokens cleaned up for user:', user.email);
   } catch (err) {
     console.error('[Login] Error cleaning expired tokens:', err.message);
   }
@@ -194,8 +182,6 @@ exports.login = asyncHandler(async (req, res, next) => {
   const accessToken = generateAccessToken(user._id);
   const refreshToken = await createAndStoreRefreshToken(user._id);
   
-  console.log('[Login] Tokens generated successfully for user:', user.email);
-
   res.status(200).json({
     status: "success",
     data: sanitizeUser(user),
@@ -218,7 +204,6 @@ exports.refreshAccessToken = asyncHandler(async (req, res, next) => {
     console.warn('[Refresh] No refresh token provided');
     return next(new ApiError('Refresh token required', 401));
   }
-  console.log('[Refresh] Processing refresh token request');
 
   // Check if token exists in database
   const storedToken = await RefreshToken.findOne({ token: refreshToken });
@@ -233,7 +218,6 @@ exports.refreshAccessToken = asyncHandler(async (req, res, next) => {
     await RefreshToken.deleteOne({ _id: storedToken._id });
     return next(new ApiError('Refresh token expired', 403));
   }
-  console.log('[Refresh] Token found in database, user ID:', storedToken.user);
 
   // Verify token signature
   let decoded;
@@ -245,7 +229,6 @@ exports.refreshAccessToken = asyncHandler(async (req, res, next) => {
     }
     
     decoded = jwt.verify(refreshToken, secret);
-    console.log('[Refresh] Token verified, decoded ID:', decoded.id);
   } catch (err) {
     console.error('[Refresh] Token verification failed:', err.message);
     await RefreshToken.deleteOne({ token: refreshToken });
@@ -258,16 +241,13 @@ exports.refreshAccessToken = asyncHandler(async (req, res, next) => {
     await RefreshToken.deleteOne({ _id: storedToken._id });
     return next(new ApiError("Invalid refresh token", 403));
   }
-  console.log('[Refresh] Token user match verified');
 
   // Delete old refresh token (rotation)
   await RefreshToken.deleteOne({ _id: storedToken._id });
-  console.log('[Refresh] Old token deleted (rotation)');
 
   // Generate new tokens
   const newAccessToken = generateAccessToken(decoded.id);
   const newRefreshToken = await createAndStoreRefreshToken(decoded.id);
-  console.log('[Refresh] New tokens generated for user:', decoded.id);
 
   res.status(200).json({
     status: 'success',
@@ -336,7 +316,6 @@ exports.protect = asyncHandler(async (req, res, next) => {
       new ApiError("You are not logged in. Please login first", 401)
     );
   }
-  console.log('[Auth] Token extracted, length:', token.length);
 
   // 2) Verify token with JWT_SECRET
   let decoded;
@@ -348,7 +327,6 @@ exports.protect = asyncHandler(async (req, res, next) => {
     }
     
     decoded = jwt.verify(token, secret);
-    console.log('[Auth] Token verified successfully for user:', decoded.id);
   } catch (err) {
     console.error('[Auth] Token verification failed:', err.message);
     
@@ -373,7 +351,6 @@ exports.protect = asyncHandler(async (req, res, next) => {
       )
     );
   }
-  console.log('[Auth] User found:', currentUser.email);
 
   // 4) Check if user account is active
   if (!currentUser.active) {
@@ -407,7 +384,6 @@ exports.protect = asyncHandler(async (req, res, next) => {
 
   // 7) Attach user to request and continue
   req.user = currentUser;
-  console.log('[Auth] User authenticated:', currentUser.email);
   next();
 });
 

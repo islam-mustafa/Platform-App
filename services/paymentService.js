@@ -60,7 +60,6 @@ exports.createPaymentRequest = async (lesson, user, paymentMethod, idempotencyKe
             originalAmount: couponResult.originalPrice,
             finalAmount: couponResult.finalPrice
           };
-          console.log(`✅ Coupon ${couponCode} applied: ${lesson.price} → ${finalAmount} EGP`);
         }
       } catch (error) {
         console.error('Coupon validation error:', error.message);
@@ -74,8 +73,7 @@ exports.createPaymentRequest = async (lesson, user, paymentMethod, idempotencyKe
     // ✅ الوضع الحقيقي (Real Paymob)
     // ============================================================
     if (isRealMode) {
-      console.log(`💰 Using REAL Paymob payment mode - Method: ${paymentMethod}`);
-      
+
       let paymentRequest;
 
       // ✅ اختيار طريقة الدفع الصح
@@ -134,8 +132,7 @@ exports.createPaymentRequest = async (lesson, user, paymentMethod, idempotencyKe
     // ============================================================
     // ✅ الوضع التجريبي (Mock)
     // ============================================================
-    console.log('💰 Using MOCK payment mode');
-    
+
     const orderId = generateMockId();
     const paymentKey = generateMockId();
     const iframeUrl = generateMockIframeUrl(paymentKey);
@@ -214,9 +211,7 @@ exports.handlePaymentWebhook = async (webhookData) => {
       }
       transaction.completedAt = new Date();
       await transaction.save();
-      
-      console.log(`✅ Payment completed for order ${orderId}, user ${transaction.userId}, lesson ${transaction.lessonId}`);
-      
+
       return {
         received: true,
         processed: true,
@@ -230,9 +225,7 @@ exports.handlePaymentWebhook = async (webhookData) => {
     } else {
       transaction.status = PAYMENT_STATUS.FAILED;
       await transaction.save();
-      
-      console.log(`❌ Payment failed for order ${orderId}`);
-      
+
       return {
         received: true,
         processed: true,
@@ -268,7 +261,6 @@ exports.markCouponAsUsed = async (transaction) => {
       transaction.userId,
       transaction.paymobOrderId
     );
-    console.log(`✅ Coupon ${transaction.metadata.coupon.code} marked as used`);
   }
 };
 

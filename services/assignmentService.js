@@ -40,7 +40,6 @@ const uploadToCloudinary = (buffer, folder, originalname) => {
           console.error('❌ Upload error:', error);
           return reject(error);
         }
-        console.log('✅ Uploaded:', result.secure_url);
         
         resolve({
           filename: nameWithoutExt,
@@ -61,11 +60,7 @@ const uploadToCloudinary = (buffer, folder, originalname) => {
 
 exports.createAssignment = asyncHandler(async (req, res, next) => {
   const { lessonId } = req.params;
-    // ✅ للتحقق من وصول الملفات
-console.log('📁 Files received:', req.files ? req.files.length : 0);
-if (req.files && req.files.length > 0) {
-  console.log('📄 File details:', req.files.map(f => f.originalname));
-}
+
   const lesson = await Lesson.findById(lessonId);
   if (!lesson) {
     return next(new ApiError('Lesson not found', 404));
@@ -97,7 +92,6 @@ if (req.files && req.files.length > 0) {
       try {
         const fileMetadata = await uploadToCloudinary(file.buffer, 'assignments/attachments', file.originalname);
         attachments.push(fileMetadata);
-        console.log(`✅ Uploaded: ${fileMetadata.filename}.${fileMetadata.extension}`);
       } catch (uploadError) {
         console.error('❌ Upload failed:', uploadError.message);
       }
@@ -133,7 +127,6 @@ const deleteFileFromCloudinary = async (publicId, resourceType = 'raw') => {
     const result = await cloudinary.uploader.destroy(publicId, {
       resource_type: resourceType
     });
-    console.log(`✅ Deleted from Cloudinary: ${publicId}`);
     return result;
   } catch (error) {
     console.error(`❌ Error deleting from Cloudinary: ${publicId}`, error);

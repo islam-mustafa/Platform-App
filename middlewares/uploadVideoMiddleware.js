@@ -11,17 +11,10 @@ cloudinary.config({
 
 // ✅ التحقق من صيغة الفيديو
 const fileFilter = (req, file, cb) => {
-  console.log('📁 File received:', {
-    fieldname: file.fieldname,
-    originalname: file.originalname,
-    mimetype: file.mimetype,
-    size: file.size
-  });
-  
+
   const allowedTypes = ['video/mp4', 'video/mov', 'video/avi', 'video/mkv', 'video/webm','video/flv','video/x-flv','application/octet-stream'];
   
   if (allowedTypes.includes(file.mimetype)) {
-    console.log('✅ File type allowed');
     cb(null, true);
   } else {
     console.log('❌ File type not allowed:', file.mimetype);

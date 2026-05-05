@@ -23,8 +23,6 @@ exports.uploadUserImage = uploadSingleImage('profileImg');
 
 // Image processing
 exports.resizeImage = asyncHandler(async (req, res, next) => {
-  console.log('🔍 req.file:', req.file);
-  console.log('🔍 req.file.buffer:', req.file?.buffer);
   if (!req.file) return next();
 
   try {
@@ -49,7 +47,6 @@ exports.resizeImage = asyncHandler(async (req, res, next) => {
     });
 
     req.body.profileImg = result.secure_url;
-    console.log('✅ Image uploaded to Cloudinary:', result.secure_url);
     next();
     
   } catch (error) {
@@ -83,8 +80,6 @@ exports.deleteMyImage = asyncHandler(async (req, res, next) => {
     return next(new ApiError('No image found to delete', 404));
   }
 
-  console.log('🔍 Full URL:', user.profileImg);
-
   try {
     const urlParts = user.profileImg.split('/');
     const uploadIndex = urlParts.indexOf('upload');
@@ -95,10 +90,8 @@ exports.deleteMyImage = asyncHandler(async (req, res, next) => {
     const publicIdWithVersion = urlParts.slice(uploadIndex + 2).join('/');
     const publicId = publicIdWithVersion.split('.')[0];
     
-    console.log('🔍 Public ID to delete:', publicId);
 
     const result = await cloudinary.uploader.destroy(publicId);
-    console.log('✅ Cloudinary delete result:', result);
 
     if (result.result !== 'ok') {
       return next(new ApiError(`Failed to delete image from Cloudinary: ${result.result}`, 500));

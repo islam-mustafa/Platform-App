@@ -43,8 +43,7 @@ const getAuthToken = async () => {
   if (!result?.token) {
     throw new ApiError('لم يتم استلام توكن من Paymob', 500);
   }
-  
-  console.log('✅ تم الحصول على توكن Paymob');
+
   return result.token;
 };
 
@@ -68,8 +67,7 @@ const createOrder = async (token, amount, merchantOrderId) => {
   if (!result?.id) {
     throw new ApiError('لم يتم استلام Order ID من Paymob', 500);
   }
-  
-  console.log(`✅ تم إنشاء طلب شراء: ${result.id}`);
+
   return result;
 };
 
@@ -108,8 +106,7 @@ const getPaymentKey = async (token, orderId, amount, billingData, integrationId)
   if (!result?.token) {
     throw new ApiError('لم يتم استلام Payment Key من Paymob', 500);
   }
-  
-  console.log('✅ تم الحصول على مفتاح الدفع');
+
   return result.token;
 };
 
@@ -196,8 +193,6 @@ exports.createWalletPayment = async (lesson, user, walletNumber, idempotencyKey)
       'فشل إرسال طلب الدفع للمحفظة'
     );
 
-    // ✅ مؤقتاً: لنشوف الـ response الحقيقي من Paymob
-    console.log('🔍 Wallet Result:', JSON.stringify(walletResult, null, 2));
 
     // ✅ Paymob بيرجع redirect_url أو iframe_redirection_url
     const redirectUrl = walletResult?.redirect_url || walletResult?.iframe_redirection_url;
@@ -207,7 +202,6 @@ exports.createWalletPayment = async (lesson, user, walletNumber, idempotencyKey)
       throw new ApiError('لم يتم استلام رابط الدفع من المحفظة', 500);
     }
 
-    console.log('✅ تم إنشاء طلب دفع المحفظة');
 
     return {
       redirectUrl,
@@ -258,8 +252,6 @@ exports.createCashPayment = async (lesson, user, idempotencyKey) => {
       'فشل إرسال طلب الدفع الكاش'
     );
 
-    // ✅ مؤقتاً: لنشوف الـ response الحقيقي من Paymob
-    console.log('🔍 Cash Result:', JSON.stringify(cashResult, null, 2));
 
     return {
       referenceNumber: cashResult?.id || cashResult?.bill_reference,

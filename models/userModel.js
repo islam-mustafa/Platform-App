@@ -44,30 +44,21 @@ userSchema.index({
 
 // ✅ حل جذري: استخدام document middleware من غير next
 userSchema.pre('save', function() {
-  console.log('========== FIXED MIDDLEWARE ==========');
-  console.log('1. Password modified?', this.isModified('password'));
-  
+
   // الباسورد مش متغير، نخرج من غير ما نعمل حاجة
   if (!this.isModified('password')) {
-    console.log('2. Password not modified, exiting');
     return;
   }
   
   try {
-    console.log('3. Hashing password...');
     // bcrypt بالطريقة المتزامنة (sync)
     this.password = bcrypt.hashSync(this.password, 12);
-    console.log('4. Password hashed successfully');
     
     if (!this.isNew) {
       this.passwordChangedAt = Date.now() - 1000;
-      console.log('5. passwordChangedAt updated');
     }
-    
-    console.log('6. Middleware completed successfully');
-    
+
   } catch (error) {
-    console.log('7. Error in middleware:', error.message);
     // مش ممكن نستخدم next، هنرمي الخطأ
     throw error;
   }
