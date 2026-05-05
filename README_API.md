@@ -9,6 +9,8 @@ This document describes the actual endpoint structure used in the current codeba
 - `idempotency-key: <unique-string>` for payment checkout.
 - `Content-Type: multipart/form-data` for upload endpoints.
 
+This document follows the routes mounted in `server.js` and the route files under `routes/`.
+
 ## Auth Routes
 
 ### POST /api/v1/auth/signup
@@ -257,6 +259,7 @@ This document describes the actual endpoint structure used in the current codeba
   }
 }
 ```
+- Possible extra fields by payment method: `iframeUrl`, `redirectUrl`, `referenceNumber`, `cashData`, `appliedCoupon`, `originalPrice`, `finalPrice`.
 - Authentication required?: Yes
 
 ### GET /api/v1/payment/transactions
@@ -1435,3 +1438,243 @@ HTTP 204 No Content
 HTTP 204 No Content
 ```
 - Authentication required?: Yes
+
+## Grade Routes
+
+### GET /api/v1/grades
+- Description: Return all grades.
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Response example:
+```json
+{
+  "status": "success",
+  "data": []
+}
+```
+- Authentication required?: Yes
+
+### GET /api/v1/grades/:id
+- Description: Return one grade.
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Response example:
+```json
+{
+  "status": "success",
+  "data": {
+    "_id": "grade_id"
+  }
+}
+```
+- Authentication required?: Yes
+
+### POST /api/v1/grades
+- Description: Create a grade. Super admin only.
+- Request headers: `Authorization: Bearer <token>`, `Content-Type: application/json`
+- Request body:
+```json
+{
+  "name": "Grade 1",
+  "description": "Optional description",
+  "order": 1,
+  "isActive": true
+}
+```
+- Authentication required?: Yes
+
+### PUT /api/v1/grades/:id
+- Description: Update a grade. Super admin only.
+- Request headers: `Authorization: Bearer <token>`, `Content-Type: application/json`
+- Request body:
+```json
+{
+  "name": "Updated Grade 1"
+}
+```
+- Authentication required?: Yes
+
+### DELETE /api/v1/grades/:id
+- Description: Delete a grade. Super admin only.
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Authentication required?: Yes
+
+### PATCH /api/v1/grades/:id/toggle
+- Description: Toggle grade active state. Super admin only.
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Authentication required?: Yes
+
+## Subject Routes
+
+### GET /api/v1/subjects
+- Description: Return all subjects.
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Authentication required?: Yes
+
+### GET /api/v1/subjects/:id
+- Description: Return one subject.
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Authentication required?: Yes
+
+### GET /api/v1/subjects/:id/structure
+- Description: Return the subject structure with its sections and lessons.
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Authentication required?: Yes
+
+### POST /api/v1/subjects
+- Description: Create a subject. Admin and super admin.
+- Request headers: `Authorization: Bearer <token>`, `Content-Type: application/json`
+- Request body:
+```json
+{
+  "name": "Mathematics",
+  "gradeId": "grade_id",
+  "description": "Optional description",
+  "order": 1,
+  "isActive": true
+}
+```
+- Authentication required?: Yes
+
+### PUT /api/v1/subjects/:id
+- Description: Update a subject. Admin and super admin.
+- Request headers: `Authorization: Bearer <token>`, `Content-Type: application/json`
+- Request body:
+```json
+{
+  "name": "Advanced Mathematics"
+}
+```
+- Authentication required?: Yes
+
+### DELETE /api/v1/subjects/:id
+- Description: Delete a subject. Admin and super admin.
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Authentication required?: Yes
+
+### PATCH /api/v1/subjects/:id/toggle
+- Description: Toggle subject active state. Admin and super admin.
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Authentication required?: Yes
+
+## Section Routes
+
+### GET /api/v1/sections
+- Description: Return all sections.
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Authentication required?: Yes
+
+### GET /api/v1/sections/:id
+- Description: Return one section.
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Authentication required?: Yes
+
+### POST /api/v1/sections
+- Description: Create a section. Admin and super admin.
+- Request headers: `Authorization: Bearer <token>`, `Content-Type: application/json`
+- Request body:
+```json
+{
+  "title": "Section 1",
+  "subjectId": "subject_id",
+  "order": 1,
+  "isActive": true
+}
+```
+- Authentication required?: Yes
+
+### PUT /api/v1/sections/:id
+- Description: Update a section. Admin and super admin.
+- Request headers: `Authorization: Bearer <token>`, `Content-Type: application/json`
+- Request body:
+```json
+{
+  "title": "Updated Section 1"
+}
+```
+- Authentication required?: Yes
+
+### DELETE /api/v1/sections/:id
+- Description: Delete a section. Admin and super admin.
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Authentication required?: Yes
+
+### PATCH /api/v1/sections/:id/toggle
+- Description: Toggle section active state. Admin and super admin.
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Authentication required?: Yes
+
+### POST /api/v1/sections/reorder
+- Description: Reorder sections. Admin and super admin.
+- Request headers: `Authorization: Bearer <token>`, `Content-Type: application/json`
+- Request body:
+```json
+{
+  "sections": [
+    { "id": "section_1", "order": 1 },
+    { "id": "section_2", "order": 2 }
+  ]
+}
+```
+- Authentication required?: Yes
+
+## Cache Routes
+
+### GET /api/v1/cache/stats
+- Description: Return cache statistics.
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Authentication required?: Yes
+
+### DELETE /api/v1/cache/flush
+- Description: Flush all cache entries.
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Authentication required?: Yes
+
+## Webhook Routes
+
+### POST /webhooks/eager-complete
+- Description: Cloudinary webhook that marks processed lesson videos as ready.
+- Request headers: `Content-Type: application/json`
+- Request body: Cloudinary payload with `public_id`.
+- Authentication required?: No
+
+### POST /webhooks/paymob
+- Description: Paymob payment webhook. Accepts raw JSON payloads.
+- Request headers: `Content-Type: application/json`
+- Request body: Paymob payload.
+- Authentication required?: No
+
+### POST /webhooks/test/success
+- Description: Mock webhook that simulates a successful payment.
+- Request headers: `Content-Type: application/json`
+- Request body:
+```json
+{
+  "orderId": "order_id"
+}
+```
+- Authentication required?: No
+
+### POST /webhooks/test/failed
+- Description: Mock webhook that simulates a failed payment.
+- Request headers: `Content-Type: application/json`
+- Request body:
+```json
+{
+  "orderId": "order_id"
+}
+```
+- Authentication required?: No

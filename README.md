@@ -11,6 +11,7 @@ Backend API لمنصة تعليمية مبنية بـ Node.js + Express + MongoD
 - Quiz system (محاولات، تمديد وقت، إعادة تنشيط).
 - Assignments (رفع مرفقات، تسليم، تصحيح).
 - Payments + Transactions + Coupons.
+- Cache admin endpoints.
 - Cloudinary video uploads + Webhooks (Cloudinary وPaymob).
 
 ## Tech Stack
@@ -222,6 +223,12 @@ Health check:
 - `GET /:id`
 - `PUT /:id`
 - `DELETE /:id`
+
+### Cache (`/api/v1/cache`)
+- `GET /stats`
+	Super admin only.
+- `DELETE /flush`
+	Super admin only.
 
 ## Notes
 
