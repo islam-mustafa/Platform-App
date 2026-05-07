@@ -1,15 +1,34 @@
-# API Documentation
+# 📚 توثيق API الشامل
 
-This document describes the actual endpoint structure used in the current codebase for the requested route files.
+هذا الملف يصف بنية جميع نقاط النهاية (Endpoints) المتاحة في النظام.
 
-## Common Headers
+## 🔗 رؤوس الطلبات المشتركة
 
-- `Content-Type: application/json` for JSON requests.
-- `Authorization: Bearer <token>` for protected endpoints.
-- `idempotency-key: <unique-string>` for payment checkout.
-- `Content-Type: multipart/form-data` for upload endpoints.
+```http
+Content-Type: application/json
+Authorization: Bearer <access_token>
+idempotency-key: <unique-string>  # مهم للدفع
+```
 
-This document follows the routes mounted in `server.js` and the route files under `routes/`.
+### أنواع رؤوس الطلبات:
+- **`Content-Type: application/json`** - للطلبات النصية العادية
+- **`Content-Type: multipart/form-data`** - لرفع الملفات والصور والفيديوهات
+- **`Authorization: Bearer <token>`** - للمسارات المحمية (معظم المسارات)
+- **`idempotency-key: <unique-string>`** - لمنع تكرار طلبات الدفع
+
+### رموز الأخطاء الشائعة:
+- `200` - نجاح الطلب
+- `201` - إنشاء مورد جديد
+- `204` - نجاح بدون محتوى
+- `400` - بيانات خاطئة
+- `401` - غير مصرح (بحاجة رمز)
+- `403` - محظور (بدون صلاحيات)
+- `404` - غير موجود
+- `500` - خطأ في السيرفر
+
+---
+
+تم بناء هذا الملف بناءً على المسارات المرفوعة في `server.js` والملفات تحت `routes/`.
 
 ## Auth Routes
 
@@ -1563,6 +1582,233 @@ HTTP 204 No Content
 - Request headers: `Authorization: Bearer <token>`
 - Request body: None
 - Authentication required?: Yes
+
+## 💳 Payment Routes (جديد ✅)
+
+### POST /api/v1/payment/checkout
+- Description: Create a payment order for a lesson purchase.
+- Request headers: `Authorization: Bearer <token>`, `Content-Type: application/json`, `idempotency-key: <unique-string>`
+- Request body:
+```json
+{
+  "lessonId": "lesson_id",
+  "paymentMethod": "card",
+  "couponCode": "SAVE10",
+  "walletNumber": "01000000000"
+}
+```
+- Response example:
+```json
+{
+  "status": "success",
+  "message": "Payment initiated",
+  "data": {
+    "paymentMethod": "card",
+    "orderId": "order_123",
+    "transactionId": "trans_123",
+    "iframeUrl": "https://checkout.paymob.com/...",
+    "appliedCoupon": {
+      "code": "SAVE10",
+      "discountType": "percentage",
+      "discountValue": 10
+    },
+    "originalPrice": 100,
+    "finalPrice": 90
+  }
+}
+```
+- Authentication required?: Yes
+- Notes: `idempotency-key` is required to prevent duplicate charges
+
+### GET /api/v1/payment/status/:orderId
+- Description: Check payment transaction status.
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Response example:
+```json
+{
+  "status": "success",
+  "data": {
+    "status": "completed",
+    "amount": 90,
+    "createdAt": "2026-05-07T10:00:00Z",
+    "completedAt": "2026-05-07T10:02:00Z",
+    "paymentMethod": "card"
+  }
+}
+```
+- Authentication required?: Yes
+
+### GET /api/v1/payment/transactions
+- Description: Get all transactions of authenticated user.
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Response example:
+```json
+{
+  "status": "success",
+  "results": 5,
+  "data": [
+    {
+      "_id": "trans_id",
+      "lessonId": { "title": "Lesson Title" },
+      "amount": 90,
+      "status": "completed"
+    }
+  ]
+}
+```
+- Authentication required?: Yes
+
+## 🎟️ Coupon Routes (جديد ✅)
+
+### POST /api/v1/coupons
+- Description: Create a new coupon (Admin/Super Admin only).
+- Request headers: `Authorization: Bearer <token>`, `Content-Type: application/json`
+- Request body:
+```json
+{
+  "code": "SAVE10",
+  "discountType": "percentage",
+  "discountValue": 10,
+  "endDate": "2026-12-31T23:59:59Z",
+  "minOrderAmount": 100,
+  "usageLimit": 100,
+  "perUserLimit": 1,
+  "isActive": true
+}
+```
+- Authentication required?: Yes (Admin+)
+
+### GET /api/v1/coupons
+- Description: List all coupons (Admin/Super Admin only).
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Authentication required?: Yes (Admin+)
+
+### GET /api/v1/coupons/code/:code
+- Description: Validate coupon by code.
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Response example:
+```json
+{
+  "status": "success",
+  "data": {
+    "_id": "coupon_id",
+    "code": "SAVE10",
+    "discountType": "percentage",
+    "discountValue": 10,
+    "isValid": true
+  }
+}
+```
+- Authentication required?: Yes
+
+### GET /api/v1/coupons/:id
+- Description: Get coupon details by ID (Admin/Super Admin only).
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Authentication required?: Yes (Admin+)
+
+### PUT /api/v1/coupons/:id
+- Description: Update a coupon (Admin/Super Admin only).
+- Request headers: `Authorization: Bearer <token>`, `Content-Type: application/json`
+- Request body:
+```json
+{
+  "discountValue": 20,
+  "usageLimit": 50
+}
+```
+- Authentication required?: Yes (Admin+)
+
+### DELETE /api/v1/coupons/:id
+- Description: Delete a coupon (Admin/Super Admin only).
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Authentication required?: Yes (Admin+)
+
+## ⚡ Cache Routes (جديد ✅)
+
+### GET /api/v1/cache/stats
+- Description: Get cache statistics and storage info (Super Admin only).
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Response example:
+```json
+{
+  "status": "success",
+  "data": {
+    "keys": 150,
+    "size": "5.2MB",
+    "hitRate": 87.5,
+    "lastUpdated": "2026-05-07T10:30:00Z"
+  }
+}
+```
+- Authentication required?: Yes (Super Admin)
+
+### DELETE /api/v1/cache/flush
+- Description: Clear all cached data (Super Admin only).
+- Request headers: `Authorization: Bearer <token>`
+- Request body: None
+- Response example:
+```json
+{
+  "status": "success",
+  "message": "Cache flushed successfully"
+}
+```
+- Authentication required?: Yes (Super Admin)
+
+## 🔗 Webhook Routes (جديد ✅)
+
+### POST /webhooks/eager-complete
+- Description: Cloudinary webhook for video processing completion.
+- Request headers: `Content-Type: application/json`
+- Request body:
+```json
+{
+  "public_id": "lesson-abc123",
+  "data": { "public_id": "lesson-abc123" }
+}
+```
+- Authentication required?: No
+
+### POST /webhooks/paymob
+- Description: Payment confirmation webhook from Paymob.
+- Request headers: `Content-Type: application/json`, `HMAC: <signature>`
+- Request body:
+```json
+{
+  "obj": {
+    "id": "transaction_id",
+    "success": true,
+    "amount": 9000,
+    "order": { "id": "order_123" }
+  }
+}
+```
+- Authentication required?: No (HMAC verified)
+
+### POST /webhooks/test/success
+- Description: Mock webhook to simulate successful payment (Development only).
+- Request headers: `Content-Type: application/json`
+- Request body:
+```json
+{ "orderId": "order_123" }
+```
+- Authentication required?: No
+
+### POST /webhooks/test/failed
+- Description: Mock webhook to simulate failed payment (Development only).
+- Request headers: `Content-Type: application/json`
+- Request body:
+```json
+{ "orderId": "order_123" }
+```
+- Authentication required?: No
 
 ## Section Routes
 
