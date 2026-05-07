@@ -182,9 +182,12 @@ const startServer = async () => {
   }
 };
 
-startServer();
-
 // ============================================================
 // ✅ للـ Vercel
 // ============================================================
 module.exports = app;
+
+// ✅ بس نشغل السيرفر لو مش في بيئة الـ test
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}

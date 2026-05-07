@@ -5,9 +5,15 @@ let mongoServer;
 
 // قبل ما أي اختبار يبدأ
 beforeAll(async () => {
+  // ✅ قطع أي connection موجود قبل ما نعمل connection جديد
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.disconnect();
+  }
+
   // بنعمل قاعدة بيانات مؤقتة جديدة في الذاكرة
   mongoServer = await MongoMemoryServer.create();
   const uri = mongoServer.getUri();
+  process.env.NODE_ENV = 'test';
 
   // بنربط Mongoose بقاعدة البيانات المؤقتة
   await mongoose.connect(uri);
@@ -16,16 +22,15 @@ beforeAll(async () => {
 
 // بعد ما كل الاختبارات تخلص
 afterAll(async () => {
-  // بنقطع الاتصال
   await mongoose.disconnect();
-  // بنقفل قاعدة البيانات المؤقتة
   await mongoServer.stop();
-  console.log('🛑 Test database stopped');
+  
+  // ✅ أضف السطر ده
+  await new Promise(resolve => setTimeout(resolve, 500));
 });
 
 // بعد كل اختبار على حدة
 afterEach(async () => {
-  // بنمسح كل البيانات من كل Collection
   const collections = mongoose.connection.collections;
   for (const key in collections) {
     await collections[key].deleteMany();
