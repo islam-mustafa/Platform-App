@@ -1,10 +1,8 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 
-// Load environment variables
 dotenv.config({ path: './config.env' });
 
-// Import Models
 const Grade = require('../models/gradeModel');
 const Subject = require('../models/subjectModel');
 const Section = require('../models/sectionModel');
@@ -16,296 +14,292 @@ const QuizAttempt = require('../models/quizAttemptModel');
 const Submission = require('../models/submissionModel');
 const Assignment = require('../models/assignmentModel');
 
-// ==================== Helper Functions ====================
-
 const cleanDatabase = async () => {
   console.log('\n🧹 Cleaning database...');
-  try {
-    await Grade.deleteMany({});
-    console.log('  ✅ Grades cleared');
-    
-    await Subject.deleteMany({});
-    console.log('  ✅ Subjects cleared');
-    
-    await Section.deleteMany({});
-    console.log('  ✅ Sections cleared');
-    
-    await Lesson.deleteMany({});
-    console.log('  ✅ Lessons cleared');
-    
-    await Quiz.deleteMany({});
-    console.log('  ✅ Quizzes cleared');
-    
-    await User.deleteMany({});
-    console.log('  ✅ Users cleared');
-    
-    await StudentLesson.deleteMany({});
-    console.log('  ✅ StudentLessons cleared');
-    
-    await QuizAttempt.deleteMany({});
-    console.log('  ✅ QuizAttempts cleared');
-    
-    await Submission.deleteMany({});
-    console.log('  ✅ Submissions cleared');
-    
-    await Assignment.deleteMany({});
-    console.log('  ✅ Assignments cleared');
-    
-    console.log('✅ Database cleaned successfully\n');
-  } catch (error) {
-    console.error('❌ Error cleaning database:', error.message);
-    throw error;
+
+  const collections = [
+    [QuizAttempt, 'QuizAttempts'],
+    [Submission, 'Submissions'],
+    [StudentLesson, 'StudentLessons'],
+    [Assignment, 'Assignments'],
+    [Quiz, 'Quizzes'],
+    [Lesson, 'Lessons'],
+    [Section, 'Sections'],
+    [Subject, 'Subjects'],
+    [User, 'Users'],
+    [Grade, 'Grades'],
+  ];
+
+  for (const [model, label] of collections) {
+    await model.deleteMany({});
+    console.log(`  ✅ ${label} cleared`);
   }
+
+  console.log('✅ Database cleaned successfully\n');
 };
 
-// ==================== Seed Grades ====================
+const futureDate = (daysAhead) => {
+  const date = new Date();
+  date.setDate(date.getDate() + daysAhead);
+  return date;
+};
 
 const seedGrades = async () => {
-  console.log('📚 Creating Grades...');
-  
-  const grades = [
+  console.log('📚 Creating grades...');
+
+  const gradesData = [
     { name: 'الصف الأول الثانوي', level: 1, order: 1, isActive: true },
     { name: 'الصف الثاني الثانوي', level: 2, order: 2, isActive: true },
     { name: 'الصف الثالث الثانوي', level: 3, order: 3, isActive: true },
   ];
-  
-  const createdGrades = await Grade.insertMany(grades);
-  console.log(`✅ Created ${createdGrades.length} grades\n`);
-  
-  return createdGrades;
+
+  const grades = [];
+  for (const gradeData of gradesData) {
+    const grade = await Grade.create(gradeData);
+    grades.push(grade);
+  }
+
+  console.log(`✅ Created ${grades.length} grades\n`);
+  return grades;
 };
 
-// ==================== Seed Subject ====================
+const seedSubject = async (grade) => {
+  console.log('📖 Creating subject...');
 
-const seedSubject = async () => {
-  console.log('📖 Creating Subject...');
-  
-  const subject = {
-    name: 'اللغة العربية',
-    description: 'مادة اللغة العربية الشاملة - النحو والبلاغة والأدب والنصوص',
+  const subject = await Subject.create({
+    name: 'اللغة العربية للمرحلة الثانوية',
+    description: 'منصة عربية متكاملة لتدريس النحو والبلاغة والنصوص والأدب عبر دروس تفاعلية واختبارات وواجبات.',
+    gradeId: grade?._id ?? null,
     hasSections: true,
     isActive: true,
     order: 1,
-  };
-  
-  const createdSubject = await Subject.create(subject);
-  console.log(`✅ Created subject: ${createdSubject.name}\n`);
-  
-  return createdSubject;
-};
+  });
 
-// ==================== Seed Sections ====================
+  console.log(`✅ Created subject: ${subject.name}\n`);
+  return subject;
+};
 
 const seedSections = async (grades, subject) => {
-  console.log('🎯 Creating Sections...');
-  
-  const sectionNames = ['النحو', 'البلاغة', 'النصوص', 'الأدب'];
-  let createdSections = [];
-  
+  console.log('🎯 Creating sections...');
+
+  const sectionTemplates = [
+    { name: 'النحو', description: 'شرح قواعد النحو من الأساسيات حتى الإعراب المتقدم.' },
+    { name: 'البلاغة', description: 'شرح الصور البيانية والمحسنات البديعية وأنماط التعبير.' },
+    { name: 'النصوص', description: 'تحليل النصوص الأدبية والشعرية وفهم الأفكار الرئيسة.' },
+    { name: 'الأدب', description: 'استعراض العصور الأدبية وخصائص كل عصر وأبرز أعلامه.' },
+  ];
+
+  const sections = [];
+
   for (const grade of grades) {
-    for (let i = 0; i < sectionNames.length; i++) {
-      const section = {
-        name: sectionNames[i],
+    for (let index = 0; index < sectionTemplates.length; index++) {
+      const template = sectionTemplates[index];
+      const section = await Section.create({
+        name: template.name,
         subjectId: subject._id,
         gradeId: grade._id,
-        description: `قسم ${sectionNames[i]} - الصف ${grade.name}`,
-        order: i + 1,
+        description: `${template.description} - ${grade.name}`,
+        order: index + 1,
         isActive: true,
         isDefault: false,
-      };
-      
-      const createdSection = await Section.create(section);
-      createdSections.push(createdSection);
+      });
+
+      sections.push(section);
     }
   }
-  
-  console.log(`✅ Created ${createdSections.length} sections (${sectionNames.length} sections × ${grades.length} grades)\n`);
-  
-  return createdSections;
+
+  console.log(`✅ Created ${sections.length} sections\n`);
+  return sections;
 };
 
-// ==================== Seed Lessons ====================
+const lessonTemplates = {
+  النحو: [
+    { title: 'المبتدأ والخبر في الجملة الاسمية', description: 'فهم مكونات الجملة الاسمية وعلامات الإعراب الأساسية.' },
+    { title: 'الفعل الماضي والمضارع والأمر', description: 'التعرف على الأزمنة الثلاثة وتوظيفها داخل الجمل.' },
+    { title: 'التوابع: النعت والعطف والبدل', description: 'شرح التوابع وكيفية إعرابها داخل الجملة العربية.' },
+  ],
+  البلاغة: [
+    { title: 'التشبيه والاستعارة', description: 'تمييز أركان التشبيه وفهم أنواع الاستعارة البلاغية.' },
+    { title: 'الكناية والمجاز', description: 'استخدام الكناية والمجاز في التعبير الأدبي والقراءة التحليلية.' },
+    { title: 'السجع والطباق والجناس', description: 'التعرف على المحسنات البديعية ودورها في إثراء النص.' },
+  ],
+  النصوص: [
+    { title: 'تحليل نص شعري جاهلي', description: 'قراءة النص وتحديد الفكرة الرئيسة والصور الجمالية.' },
+    { title: 'نصوص الشعر الحديث', description: 'فهم السمات الفنية للشعر الحديث والرمزية فيه.' },
+    { title: 'النثر والخطابة', description: 'التمييز بين الأسلوب النثري والخطابي وأغراضه.' },
+  ],
+  الأدب: [
+    { title: 'الأدب الجاهلي وخصائصه', description: 'التعرف على البيئة الجاهلية وخصائص الأدب فيها.' },
+    { title: 'الأدب الإسلامي والأموي', description: 'مراحل تطور الأدب بعد الإسلام وأبرز الاتجاهات.' },
+    { title: 'الأدب العباسي والحديث', description: 'مقارنة بين الأدب العباسي والاتجاهات الأدبية الحديثة.' },
+  ],
+};
 
 const seedLessons = async (sections) => {
-  console.log('📝 Creating Lessons...');
-  
-  const lessonTemplates = {
-    'النحو': [
-      { title: 'إعراب المبتدأ والخبر', description: 'تعلم كيفية إعراب المبتدأ والخبر بأنواعهما المختلفة' },
-      { title: 'الفعل الماضي والفعل المضارع', description: 'شرح الفعل الماضي والمضارع والأمر' },
-      { title: 'الجملة الاسمية والفعلية', description: 'التمييز بين الجملة الاسمية والفعلية' },
-      { title: 'الحروف والأدوات', description: 'دراسة الحروف والأدوات النحوية' },
-      { title: 'التوابع والبدل', description: 'النعت والإضافة والبدل والعطف' },
-    ],
-    'البلاغة': [
-      { title: 'الاستعارة والتشبيه', description: 'شرح البلاغة والاستعارة والتشبيه' },
-      { title: 'الكناية والمجاز', description: 'الكناية والمجاز والحقيقة' },
-      { title: 'السجع والطباق', description: 'السجع والطباق والجناس' },
-      { title: 'أساليب البلاغة', description: 'الأساليب البلاغية الأخرى' },
-    ],
-    'النصوص': [
-      { title: 'نصوص الشعر الجاهلي', description: 'دراسة نصوص من الشعر الجاهلي' },
-      { title: 'نصوص الشعر الحديث', description: 'نصوص من الشعر الحديث والمعاصر' },
-      { title: 'نصوص النثر', description: 'نصوص من الكتابات النثرية' },
-      { title: 'الخطب والرسائل', description: 'الخطب والرسائل القديمة' },
-    ],
-    'الأدب': [
-      { title: 'الأدب الجاهلي', description: 'تاريخ الأدب الجاهلي وخصائصه' },
-      { title: 'الأدب الإسلامي', description: 'الأدب في العصر الإسلامي' },
-      { title: 'الأدب العباسي', description: 'الأدب والشعر في العصر العباسي' },
-      { title: 'الأدب الحديث', description: 'الأدب والتيارات الحديثة' },
-      { title: 'النقد الأدبي', description: 'مقدمة في النقد الأدبي' },
-    ],
-  };
-  
-  let createdLessons = [];
-  let lessonOrder = {};
-  
+  console.log('📝 Creating lessons...');
+
+  const lessons = [];
+
   for (const section of sections) {
-    if (!lessonOrder[section.name]) {
-      lessonOrder[section.name] = 0;
-    }
-    
     const templates = lessonTemplates[section.name] || [];
-    
-    for (let i = 0; i < templates.length; i++) {
-      const isPremium = i % 3 === 0; // كل ثالث درس يكون مدفوع
-      const price = isPremium ? 50 : 0; // 50 قرش للمدفوع
-      
-      const lesson = {
-        title: templates[i].title,
-        description: templates[i].description,
+
+    for (let index = 0; index < templates.length; index++) {
+      const template = templates[index];
+      const isPremium = index % 2 === 1;
+      const price = isPremium ? 75 : 0;
+
+      const lesson = await Lesson.create({
+        title: template.title,
+        description: template.description,
         sectionId: section._id,
-        order: i + 1,
-        isPremium: isPremium,
-        price: price,
+        order: index + 1,
+        isPremium,
+        price,
         currency: 'EGP',
         content: {
-          text: `محتوى درس: ${templates[i].title}\n\nهذا هو المحتوى النصي للدرس يشرح الموضوع بشكل مفصل...`,
-          attachments: [],
-          duration: 15 + Math.floor(Math.random() * 30),
+          text: `درس ${template.title} يشرح الفكرة خطوة بخطوة مع أمثلة عربية واضحة وتمارين تطبيقية للطالب.`,
+          duration: 18 + (index * 7),
         },
-        videos: [],
+        videos: [
+          {
+            publicId: `seed/${section.name.replace(/\s+/g, '-').toLowerCase()}-${index + 1}`,
+            hlsUrl: null,
+            mp4Url: null,
+            duration: 900 + (index * 120),
+            thumbnail: null,
+            title: 'الفيديو التعليمي الرئيسي',
+            order: 1,
+            processingStatus: 'ready',
+          },
+        ],
         isActive: true,
-      };
-      
-      const createdLesson = await Lesson.create(lesson);
-      createdLessons.push(createdLesson);
+      });
+
+      lessons.push(lesson);
     }
   }
-  
-  console.log(`✅ Created ${createdLessons.length} lessons\n`);
-  
-  return createdLessons;
+
+  console.log(`✅ Created ${lessons.length} lessons\n`);
+  return lessons;
 };
 
-// ==================== Seed Quizzes ====================
+const buildQuizQuestions = (lessonTitle) => ([
+  {
+    questionText: `ما الفكرة الأساسية في درس "${lessonTitle}"؟`,
+    type: 'multiple_choice',
+    points: 2,
+    options: [
+      { text: 'فهم المفهوم وتطبيقه', isCorrect: true },
+      { text: 'حفظ النص فقط', isCorrect: false },
+      { text: 'تجاهل الأمثلة', isCorrect: false },
+      { text: 'الاعتماد على التخمين', isCorrect: false },
+    ],
+    correctAnswer: 0,
+    explanation: 'الهدف من الدرس هو الفهم العملي مع التطبيق.',
+    order: 1,
+  },
+  {
+    questionText: 'الشرح الواضح والأمثلة المتدرجة يساعدان الطالب على الفهم.',
+    type: 'true_false',
+    points: 1,
+    correctAnswer: true,
+    explanation: 'الشرح المتدرج والأمثلة من أفضل أساليب التعلم.',
+    order: 2,
+  },
+  {
+    questionText: 'ما أفضل خطوة بعد مشاهدة الدرس؟',
+    type: 'multiple_choice',
+    points: 2,
+    options: [
+      { text: 'حل التمارين والتأكد من الفهم', isCorrect: true },
+      { text: 'إغلاق المنصة نهائيًا', isCorrect: false },
+      { text: 'تجاهل الاختبار', isCorrect: false },
+      { text: 'حفظ العناوين فقط', isCorrect: false },
+    ],
+    correctAnswer: 0,
+    explanation: 'حل التمارين يثبت المعلومات ويقيس مستوى الفهم.',
+    order: 3,
+  },
+]);
 
 const seedQuizzes = async (lessons) => {
-  console.log('❓ Creating Quizzes...');
-  
-  let createdQuizzes = [];
-  
+  console.log('❓ Creating quizzes...');
+
+  const quizzes = [];
+
   for (const lesson of lessons) {
-    const quiz = {
+    const quiz = await Quiz.create({
       lessonId: lesson._id,
-      title: `اختبار: ${lesson.title}`,
-      description: `اختبر معلوماتك حول درس ${lesson.title}`,
-      timeLimit: 10, // 10 دقائق
+      title: `اختبار ${lesson.title}`,
+      description: `اختبار قصير يقيس فهم الطالب لدرس ${lesson.title}.`,
+      timeLimit: 12,
       passingScore: 70,
       attemptsAllowed: 3,
       shuffleQuestions: true,
       showResults: true,
-      questions: [
-        {
-          questionText: 'ما هو الإعراب الصحيح لكلمة "محمد" في الجملة: انطلق محمد؟',
-          type: 'multiple_choice',
-          points: 1,
-          options: [
-            { text: 'فاعل مرفوع', isCorrect: true },
-            { text: 'مبتدأ مرفوع', isCorrect: false },
-            { text: 'مفعول به منصوب', isCorrect: false },
-            { text: 'جار ومجرور', isCorrect: false },
-          ],
-          correctAnswer: 0,
-          explanation: 'محمد هو فاعل الفعل "انطلق" ويجب أن يكون مرفوعاً',
-          order: 1,
-        },
-        {
-          questionText: 'الاستعارة هي تشبيه حذفت منه أداة التشبيه والمشبه به',
-          type: 'true_false',
-          points: 1,
-          correctAnswer: true,
-          explanation: 'هذا تعريف صحيح للاستعارة في البلاغة',
-          order: 2,
-        },
-        {
-          questionText: 'أي من الآتي يعتبر من أدوات العطف؟',
-          type: 'multiple_choice',
-          points: 1,
-          options: [
-            { text: 'في', isCorrect: false },
-            { text: 'و', isCorrect: true },
-            { text: 'على', isCorrect: false },
-            { text: 'من', isCorrect: false },
-          ],
-          correctAnswer: 1,
-          explanation: 'حرف الواو يعتبر من أهم أدوات العطف',
-          order: 3,
-        },
-        {
-          questionText: 'المجاز هو استخدام اللفظ في غير معناه الحقيقي',
-          type: 'true_false',
-          points: 1,
-          correctAnswer: true,
-          explanation: 'هذا تعريف صحيح للمجاز',
-          order: 4,
-        },
-        {
-          questionText: 'كم عدد حروف الجر في اللغة العربية؟',
-          type: 'multiple_choice',
-          points: 1,
-          options: [
-            { text: '18 حرف', isCorrect: true },
-            { text: '20 حرف', isCorrect: false },
-            { text: '25 حرف', isCorrect: false },
-            { text: '10 أحرف', isCorrect: false },
-          ],
-          correctAnswer: 0,
-          explanation: 'هناك 18 حرف جر في اللغة العربية',
-          order: 5,
-        },
-      ],
+      questions: buildQuizQuestions(lesson.title),
       isActive: true,
       publishedAt: new Date(),
-    };
-    
-    try {
-      const createdQuiz = await Quiz.create(quiz);
-      createdQuizzes.push(createdQuiz);
-    } catch (error) {
-      // تجاهل الأخطاء المتعلقة بـ unique constraint
-      if (error.code === 11000) {
-        console.log(`  ⚠️  Quiz already exists for lesson: ${lesson.title}`);
-      } else {
-        console.error(`  ❌ Error creating quiz for ${lesson.title}:`, error.message);
-      }
-    }
+    });
+
+    await Lesson.findByIdAndUpdate(lesson._id, { quizId: quiz._id });
+    quizzes.push(quiz);
   }
-  
-  console.log(`✅ Created ${createdQuizzes.length} quizzes\n`);
-  
-  return createdQuizzes;
+
+  console.log(`✅ Created ${quizzes.length} quizzes\n`);
+  return quizzes;
 };
 
-// ==================== Seed Users ====================
+const buildAssignmentQuestions = (lessonTitle) => ([
+  `لخّص الفكرة الأساسية في درس ${lessonTitle} في خمس جمل عربية سليمة.`,
+  `اكتب مثالين تطبيقيين مرتبطين بدرس ${lessonTitle}.`,
+  'اذكر نقطة واحدة ما زالت تحتاج إلى مراجعة بعد مشاهدة الدرس.',
+]);
+
+const seedAssignments = async (lessons) => {
+  console.log('📄 Creating assignments...');
+
+  const assignments = [];
+
+  for (const lesson of lessons) {
+    const assignment = await Assignment.create({
+      lessonId: lesson._id,
+      title: `واجب ${lesson.title}`,
+      description: `واجب منزلي يراجع فهم الطالب لمحتوى ${lesson.title} من خلال تطبيق مباشر وتمرينات قصيرة.`,
+      instructions: buildAssignmentQuestions(lesson.title).join('\n'),
+      dueDate: futureDate(14),
+      submissionType: 'both',
+      allowedFileTypes: ['pdf', 'docx', 'jpg', 'png'],
+      maxPoints: 100,
+      passingPoints: 60,
+      isActive: true,
+      publishedAt: new Date(),
+      attachments: [
+        {
+          filename: `${lesson.title}.pdf`,
+          extension: 'pdf',
+          mimeType: 'application/pdf',
+          url: `https://example.com/assignments/${encodeURIComponent(lesson.title)}.pdf`,
+          publicId: `assignments/${lesson._id}`,
+          size: 1024,
+        },
+      ],
+    });
+
+    await Lesson.findByIdAndUpdate(lesson._id, { assignmentId: assignment._id });
+    assignments.push(assignment);
+  }
+
+  console.log(`✅ Created ${assignments.length} assignments\n`);
+  return assignments;
+};
 
 const seedUsers = async () => {
-  console.log('👥 Creating Users...');
-  
-  const users = [
+  console.log('👥 Creating users...');
+
+  const usersData = [
     {
-      name: 'Admin User',
+      name: 'مدير المنصة',
       email: 'admin@example.com',
       phone: '01012345678',
       parentPhone: '01112345678',
@@ -315,8 +309,18 @@ const seedUsers = async () => {
       active: true,
     },
     {
-      name: 'Test User',
-      email: 'user@example.com',
+      name: 'المشرف العام',
+      email: 'superadmin@example.com',
+      phone: '01022223333',
+      parentPhone: '01122223333',
+      password: 'superadmin123',
+      role: 'super_admin',
+      emailVerified: true,
+      active: true,
+    },
+    {
+      name: 'أحمد محمد',
+      email: 'ahmed@example.com',
       phone: '01098765432',
       parentPhone: '01198765432',
       password: 'user123',
@@ -325,81 +329,89 @@ const seedUsers = async () => {
       active: true,
     },
     {
-      name: 'Student Two',
-      email: 'student2@example.com',
-      phone: '01055555555',
-      parentPhone: '01155555555',
-      password: 'student123',
+      name: 'سارة علي',
+      email: 'sara@example.com',
+      phone: '01055554444',
+      parentPhone: '01155554444',
+      password: 'user123',
       role: 'user',
       emailVerified: true,
       active: true,
     },
   ];
-  
-  let createdUsers = [];
-  
-  for (const user of users) {
-    // Rely on User model pre-save middleware to hash password once.
-    const createdUser = await User.create(user);
-    createdUsers.push(createdUser);
-  }
-  
-  console.log(`✅ Created ${createdUsers.length} users\n`);
-  
-  return createdUsers;
-};
 
-// ==================== Seed Student Lessons ====================
+  const users = [];
+
+  for (const userData of usersData) {
+    const user = await User.create(userData);
+    users.push(user);
+  }
+
+  console.log(`✅ Created ${users.length} users\n`);
+  return users;
+};
 
 const seedStudentLessons = async (users, lessons) => {
-  console.log('🎓 Creating StudentLesson records...');
-  
-  // ابحث عن الطالب (ليس الأدمن)
-  const student = users.find(u => u.role === 'user');
-  
-  if (!student) {
-    console.log('  ⚠️  No student user found, skipping StudentLesson creation\n');
-    return [];
-  }
-  
-  let createdStudentLessons = [];
-  
-  // أعطِ الطالب وصول لأول 10 دروس (المجانية وبعض المدفوعة)
-  const studentLessonsData = [];
-  for (let i = 0; i < Math.min(10, lessons.length); i++) {
-    studentLessonsData.push({
-      userId: student._id,
-      lessonId: lessons[i]._id,
-      hasAccess: true, // الطالب لديه وصول
-      watchPercentage: Math.floor(Math.random() * 100),
-      lastAccess: new Date(),
-    });
-  }
-  
-  try {
-    // استخدم insertMany لتجاوز مشاكل middleware
-    const created = await StudentLesson.insertMany(studentLessonsData, { ordered: false });
-    createdStudentLessons = created;
-  } catch (error) {
-    // insertMany مع ordered: false سيُدرج ما هو ممكن ويسجل الأخطاء
-    if (error.insertedDocs) {
-      createdStudentLessons = error.insertedDocs;
-      console.log(`  ⚠️  Partially created StudentLessons (${error.insertedDocs.length} out of ${studentLessonsData.length})`);
-    } else {
-      console.error(`  ❌ Error creating StudentLessons:`, error.message);
+  console.log('🎓 Creating student lesson access records...');
+
+  const students = users.filter((user) => user.role === 'user');
+  const targetLessons = lessons.slice(0, Math.min(8, lessons.length));
+  const studentLessons = [];
+
+  for (const student of students) {
+    for (const lesson of targetLessons) {
+      const studentLesson = await StudentLesson.create({
+        userId: student._id,
+        lessonId: lesson._id,
+        hasAccess: true,
+        purchaseDate: new Date(),
+        purchasePrice: lesson.isPremium ? lesson.price : 0,
+        purchaseCurrency: 'EGP',
+        accessCount: 1,
+        refreshCount: 0,
+        lastAccess: new Date(),
+        watchPercentage: Math.floor(45 + Math.random() * 50),
+        completed: false,
+      });
+
+      studentLessons.push(studentLesson);
     }
   }
-  
-  console.log(`✅ Created ${createdStudentLessons.length} StudentLesson records\n`);
-  
-  return createdStudentLessons;
+
+  console.log(`✅ Created ${studentLessons.length} student lesson records\n`);
+  return studentLessons;
 };
 
-// ==================== Main Seed Function ====================
+const verifyRelationships = async () => {
+  console.log('🔍 Verifying relationships...');
+
+  const populatedLesson = await Lesson.findOne()
+    .populate('sectionId', 'name gradeId subjectId order')
+    .populate('quizId', 'title lessonId')
+    .populate('assignmentId', 'title lessonId')
+    .lean();
+
+  const populatedQuiz = await Quiz.findOne()
+    .populate('lessonId', 'title sectionId quizId assignmentId')
+    .lean();
+
+  const populatedStudentLesson = await StudentLesson.findOne()
+    .populate('userId', 'name email role')
+    .populate('lessonId', 'title sectionId quizId assignmentId')
+    .lean();
+
+  console.log('\n📌 Lesson with populated section/quiz/assignment:');
+  console.log(JSON.stringify(populatedLesson, null, 2));
+
+  console.log('\n📌 Quiz with populated lesson:');
+  console.log(JSON.stringify(populatedQuiz, null, 2));
+
+  console.log('\n📌 StudentLesson with populated user and lesson:');
+  console.log(JSON.stringify(populatedStudentLesson, null, 2));
+};
 
 const seed = async () => {
   try {
-    // Connect to MongoDB
     console.log('🔗 Connecting to MongoDB...');
     await mongoose.connect(process.env.DB_URI, {
       serverSelectionTimeoutMS: 10000,
@@ -407,44 +419,48 @@ const seed = async () => {
     });
     console.log('✅ Connected to MongoDB\n');
 
-    // Clean Database
     await cleanDatabase();
 
-    // Seed Data
     const grades = await seedGrades();
-    const subject = await seedSubject();
+    const subject = await seedSubject(grades[0]);
     const sections = await seedSections(grades, subject);
     const lessons = await seedLessons(sections);
     const quizzes = await seedQuizzes(lessons);
+    const assignments = await seedAssignments(lessons);
     const users = await seedUsers();
     const studentLessons = await seedStudentLessons(users, lessons);
 
-    // Summary
-    console.log('\n' + '='.repeat(50));
+    await verifyRelationships();
+
+    console.log('\n' + '='.repeat(60));
     console.log('📊 SEEDING SUMMARY');
-    console.log('='.repeat(50));
+    console.log('='.repeat(60));
     console.log(`✅ Grades created: ${grades.length}`);
-    console.log(`✅ Subjects created: 1`);
+    console.log('✅ Subject created: 1');
     console.log(`✅ Sections created: ${sections.length}`);
     console.log(`✅ Lessons created: ${lessons.length}`);
     console.log(`✅ Quizzes created: ${quizzes.length}`);
+    console.log(`✅ Assignments created: ${assignments.length}`);
     console.log(`✅ Users created: ${users.length}`);
     console.log(`✅ StudentLessons created: ${studentLessons.length}`);
-    console.log('='.repeat(50));
+    console.log('='.repeat(60));
     console.log('✅ Database seeding completed successfully!\n');
 
-    // Disconnect from MongoDB
     await mongoose.disconnect();
     console.log('🔌 Disconnected from MongoDB');
     process.exit(0);
-
   } catch (error) {
     console.error('\n❌ Error during seeding:', error.message);
     console.error(error);
-    await mongoose.disconnect();
+
+    try {
+      await mongoose.disconnect();
+    } catch (disconnectError) {
+      console.error('❌ Error during MongoDB disconnect:', disconnectError.message);
+    }
+
     process.exit(1);
   }
 };
 
-// Run Seed
 seed();

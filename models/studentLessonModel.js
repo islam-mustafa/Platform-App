@@ -83,7 +83,7 @@ studentLessonSchema.index({ userId: 1, completed: 1 });
 studentLessonSchema.index({ lessonId: 1, hasAccess: 1 });
 
 // ✅ Middleware لتعيين attemptNumber تلقائيًا
-studentLessonSchema.pre('save', function(next) {
+studentLessonSchema.pre('save', async function() {
   if (this.quizAttempts && this.quizAttempts.length > 0) {
     const lastAttempt = this.quizAttempts[this.quizAttempts.length - 1];
     if (!lastAttempt.attemptNumber) {
@@ -97,8 +97,6 @@ studentLessonSchema.pre('save', function(next) {
       lastSubmission.submissionNumber = this.assignmentSubmissions.length;
     }
   }
-  
-  next();
 });
 
 const StudentLesson = mongoose.models.StudentLesson || mongoose.model('StudentLesson', studentLessonSchema);

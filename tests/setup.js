@@ -13,6 +13,8 @@ beforeAll(async () => {
   // بنعمل قاعدة بيانات مؤقتة جديدة في الذاكرة
   mongoServer = await MongoMemoryServer.create();
   const uri = mongoServer.getUri();
+    console.log('🔍 Test DB URI:', uri);
+
   process.env.NODE_ENV = 'test';
 
   // بنربط Mongoose بقاعدة البيانات المؤقتة

@@ -1,0 +1,9 @@
+# ✅ تمت إزالة MongoDB service
+services:
+  api:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - config.env           # نفس المتغيرات اللي بتستخدمها محلياً (فيها رابط Atlas)
+    restart: unless-stopped  # لو اتحط السيرفر، يشتغل تاني تلقائياً
