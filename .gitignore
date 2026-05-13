@@ -13,7 +13,6 @@ PROJECT_STRUCTURE.md
 
 # Dependency directories
 node_modules/
-package-lock.json
 Platform-API.postman_collection.json
 
 # Environment variables
