@@ -35,8 +35,8 @@ jobs:
         env:
           NODE_ENV: test
           DB_URI: mongodb://localhost:27017/platform_test
-          JWT_SECRET_KEY: test_secret_key
-          JWT_REFRESH_SECRET: test_refresh_secret
+          JWT_SECRET_KEY: test_secret_key_for_ci_must_be_at_least_32_characters_long
+          JWT_REFRESH_SECRET: test_refresh_secret_for_ci_must_be_at_least_32_characters_long
           EMAIL_VERIFICATION_REQUIRED: false
           PAYMENT_MODE: mock
 
