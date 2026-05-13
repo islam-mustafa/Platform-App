@@ -2,6 +2,30 @@
 
 Backend API احترافية لمنصة تعليمية متكاملة مبنية بـ Node.js + Express + MongoDB.
 
+## 🐳 Docker
+
+المشروع يدعم التشغيل داخل Docker، مع ملفات جاهزة في جذر المشروع:
+- [Dockerfile](Dockerfile)
+- [docker-compose.yml](docker-compose.yml)
+
+### التشغيل عبر Docker Compose
+
+```bash
+docker compose up --build
+```
+
+### ملاحظات مهمة
+- التطبيق يعمل داخل الحاوية على `PORT=8000` بشكل افتراضي.
+- ملف `docker-compose.yml` يمرر `PORT=8000` ويستخدم ملف `config.env`.
+- تأكد أن `DB_URI` يشير إلى قاعدة بيانات يمكن الوصول إليها من داخل الحاوية.
+
+## آخر التحديثات
+
+- تحديث `scripts/seed.js` بحيث يعتمد على الـ `_id` الحقيقي عند إنشاء العلاقات بين Grade, Subject, Section, Lesson, Quiz, Assignment, وStudentLesson.
+- إضافة خطوة تحقق نهائية داخل seed لطباعة نتائج `populate` والتأكد من سلامة العلاقات.
+- إضافة `Platform-API.postman_collection.json` لتجميع كل مسارات الـ API في Collection جاهزة للاستيراد.
+- إضافة حقل `gradeId` اختياري في `subjectModel.js` لربط المادة بالصف الأول المُنشأ أثناء الـ seed.
+
 ## ✨ نظرة عامة
 
 المنصة توفر حلاً تعليميًا شاملاً يتضمن:
@@ -88,6 +112,7 @@ Backend API احترافية لمنصة تعليمية متكاملة مبنية
 - **Cloudinary** حساب للفيديوهات (اختياري)
 - **Paymob** حساب للدفع (اختياري في وضع التطوير)
 - **Gmail App Password** (للبريد الإلكتروني)
+- **Docker** و Docker Compose (اختياري لتشغيل المشروع داخل الحاويات)
 
 ## 🔐 متغيرات البيئة
 
@@ -95,7 +120,7 @@ Backend API احترافية لمنصة تعليمية متكاملة مبنية
 
 ```env
 # إعدادات السيرفر الأساسية
-PORT=3000
+PORT=8000
 NODE_ENV=development
 
 # قاعدة البيانات
@@ -166,9 +191,19 @@ cp config.env.example config.env
 npm run dev
 ```
 
+### التثبيت عبر Docker
+
+```bash
+# تشغيل التطبيق داخل حاوية Docker
+docker compose up --build
+
+# إيقاف الحاويات
+docker compose down
+```
+
 ### الرابط الافتراضي
-- **السيرفر**: `http://localhost:3000`
-- **فحص الصحة**: `GET http://localhost:3000/api/health`
+- **السيرفر**: `http://localhost:8000`
+- **فحص الصحة**: `GET http://localhost:8000/api/health`
 
 ## 📦 أوامر npm
 
@@ -178,8 +213,6 @@ npm run dev
 | `npm start` | تشغيل السيرفر مباشرة (للإنتاج) |
 | `npm run build` | بناء المشروع (placeholder حالياً) |
 | `npm test` | تشغيل جميع الاختبارات |
-| `npm run test:unit` | اختبارات الوحدات فقط |
-| `npm run test:integration` | اختبارات التكامل فقط |
 | `npm run test:coverage` | تشغيل الاختبارات مع تقرير التغطية |
 | `npm run test:watch` | مراقبة الملفات وتشغيل الاختبارات تلقائياً |
 
@@ -504,7 +537,7 @@ Platform/
 │       └── payment.test.js         # اختبارات الدفع
 │
 ├── scripts/
-│   ├── seed.js                     # ملء قاعدة البيانات
+│   ├── seed.js                     # ملء قاعدة البيانات مع علاقات صحيحة
 │   ├── checkSeed.js                # التحقق من البيانات
 │   ├── migrateVideos.js            # ترحيل الفيديوهات
 │   └── migrateAttachments.js       # ترحيل المرفقات
@@ -514,7 +547,8 @@ Platform/
 ├── package.json
 ├── server.js                       # نقطة الدخول الرئيسية
 ├── vercel.json                     # إعدادات Vercel
-├── API_DOCS.md                     # توثيق API الشامل
+├── README_API.md                   # توثيق API الشامل
+├── Platform-API.postman_collection.json # Postman Collection كاملة
 └── README.md                       # هذا الملف
 ```
 
@@ -552,7 +586,7 @@ GET    /api/v1/cache/stats          # إحصائيات الكاش
 DELETE /api/v1/cache/flush          # مسح الكاش (Super Admin)
 ```
 
-للمزيد من التفاصيل، راجع [API_DOCS.md](API_DOCS.md)
+للمزيد من التفاصيل، راجع [README_API.md](README_API.md) و[Platform-API.postman_collection.json](Platform-API.postman_collection.json)
 
 ## Notes
 
@@ -563,4 +597,5 @@ DELETE /api/v1/cache/flush          # مسح الكاش (Super Admin)
 ## Deployment
 
 - `server.js` يصدّر `app`.
-- حاليًا الكود يقوم بتشغيل السيرفر داخل نفس الملف عبر `startServer()`.
+- السيرفر يعمل محليًا على `PORT=8000` افتراضيًا إذا لم يتم تحديد منفذ في `config.env`.
+- ملف الـ seed الحالي ينشئ بيانات مترابطة ويمكن تشغيله يدويًا عبر `node scripts/seed.js`.
