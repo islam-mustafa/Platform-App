@@ -194,7 +194,7 @@ npm run dev
 ### التثبيت عبر Docker
 
 ```bash
-# تشغيل التطبيق داخل حاوية Docker
+# تشغيل التطبيق داخل حاوية Docker 
 docker compose up --build
 
 # إيقاف الحاويات
