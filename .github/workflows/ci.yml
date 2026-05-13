@@ -35,10 +35,13 @@ jobs:
         env:
           NODE_ENV: test
           DB_URI: mongodb://localhost:27017/platform_test
-          JWT_SECRET_KEY: test_secret_key_for_ci_must_be_at_least_32_characters_long
-          JWT_REFRESH_SECRET: test_refresh_secret_for_ci_must_be_at_least_32_characters_long
+          JWT_SECRET_KEY: test_secret_key_32_chars_long_1234567890
+          JWT_REFRESH_SECRET: test_refresh_secret_32_chars_long_1234567890
+          JWT_EXPIRE_TIME: 1h
+          JWT_REFRESH_EXPIRE_TIME: 7d
           EMAIL_VERIFICATION_REQUIRED: false
           PAYMENT_MODE: mock
+          PORT: 3000
 
   deploy:
     name: Deploy to Vercel

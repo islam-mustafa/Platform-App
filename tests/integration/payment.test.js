@@ -55,6 +55,11 @@ describe('Payment API - Integration Tests', () => {
       .send({ email: 'testuser@example.com', password: 'password123' });
 
     accessToken = loginRes.body.tokens?.accessToken;
+    
+    // ✅ التأكد من وجود token
+    if (!accessToken) {
+      throw new Error('Failed to get access token');
+    }
   });
 
   // ✅ Test 1: شراء درس بدون Idempotency-Key (يرجع 400)
@@ -98,7 +103,7 @@ describe('Payment API - Integration Tests', () => {
     expect(response.body.data.appliedCoupon.code).toBe('TEST20');
     expect(response.body.data).toHaveProperty('originalPrice', 100);
     expect(response.body.data).toHaveProperty('finalPrice', 80);
-  },10000);
+  }, 10000);
 
   // ✅ Test 3: شراء درس بكود خصم غير صالح (يرجع 400)
   test('POST /payment/checkout - with invalid coupon', async () => {
