@@ -12,6 +12,8 @@ WORKDIR /app
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
+# ✅ إنشاء مجلد logs ومنح الصلاحيات
+RUN mkdir -p logs && chown -R nodejs:nodejs logs
 # ============================================
 # 3️⃣ نسخ package.json أولاً (للاستفادة من caching)
 # ============================================
@@ -26,6 +28,9 @@ RUN npm ci --only=production && npm cache clean --force
 # 5️⃣ نسخ باقي ملفات المشروع
 # ============================================
 COPY --chown=nodejs:nodejs . .
+
+# ✅ التأكد من صلاحيات مجلد logs مرة أخرى
+RUN chown -R nodejs:nodejs logs
 
 # ============================================
 # 6️⃣ تبديل للمستخدم غير root
