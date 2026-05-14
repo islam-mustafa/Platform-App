@@ -2,6 +2,8 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const morgan = require('morgan');
+const compression = require('compression');
+const helmet = require('helmet');
 
 const ApiError = require("./utils/apiError");
 const { globalError } = require("./middlewares/errorMiddleware");
@@ -35,6 +37,12 @@ const app = express();
 
 // Enable CORS for all routes
 app.use(cors());
+
+// ✅ أمان HTTP headers
+app.use(helmet());
+
+// ✅ ضغط الـ Responses (تسريع الـ API)
+app.use(compression());
 
 const morganStream = {
   write: (message) => logger.http(message.trim()),

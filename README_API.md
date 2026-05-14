@@ -30,6 +30,44 @@ idempotency-key: <unique-string>  # مهم للدفع
 
 تم بناء هذا الملف بناءً على المسارات المرفوعة في `server.js` والملفات تحت `routes/`.
 
+## ✅ آخر تحديثات الـ API
+
+- تمت إضافة طبقة أمان HTTP عبر `helmet` وضغط الاستجابات عبر `compression`.
+- تمت إضافة `Rate Limiting` على مستوى API والمسارات الحساسة مثل `auth` و`payment`.
+- تمت إضافة Logging مركزي عبر `morgan` + `winston`.
+- تمت إضافة Feature Flag endpoint للتجربة: `GET /api/test/feature-flag`.
+
+## System Routes
+
+### GET /api/health
+- Description: Health check endpoint للتأكد أن السيرفر يعمل.
+- Request headers: None
+- Request body: None
+- Response example:
+```json
+{
+  "status": "OK",
+  "message": "Server is healthy",
+  "time": "2026-05-14T10:00:00.000Z"
+}
+```
+- Authentication required?: No
+
+### GET /api/test/feature-flag
+- Description: Endpoint لاختبار Feature Flag (LaunchDarkly) باستخدام مستخدم تجريبي.
+- Request headers: None
+- Request body: None
+- Response example:
+```json
+{
+  "status": "success",
+  "flag": "test-flag",
+  "value": true,
+  "message": "Feature is ENABLED"
+}
+```
+- Authentication required?: No
+
 ## Auth Routes
 
 ### POST /api/v1/auth/signup

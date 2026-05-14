@@ -15,8 +15,8 @@ docker compose up --build
 ```
 
 ### ملاحظات مهمة
-- التطبيق يعمل داخل الحاوية على `PORT=8000` بشكل افتراضي.
-- ملف `docker-compose.yml` يمرر `PORT=8000` ويستخدم ملف `config.env`.
+- التطبيق يعمل داخل الحاوية على `PORT=3000` بشكل افتراضي.
+- ملف `docker-compose.yml` يمرر `PORT=3000` ويستخدم ملف `config.env`.
 - تأكد أن `DB_URI` يشير إلى قاعدة بيانات يمكن الوصول إليها من داخل الحاوية.
 
 ## آخر التحديثات
@@ -25,6 +25,8 @@ docker compose up --build
 - إضافة خطوة تحقق نهائية داخل seed لطباعة نتائج `populate` والتأكد من سلامة العلاقات.
 - إضافة `Platform-API.postman_collection.json` لتجميع كل مسارات الـ API في Collection جاهزة للاستيراد.
 - إضافة حقل `gradeId` اختياري في `subjectModel.js` لربط المادة بالصف الأول المُنشأ أثناء الـ seed.
+- إضافة طبقة أمان وتشغيل محسنة: `helmet` + `compression` + `morgan` + `express-rate-limit`.
+- إضافة دعم Feature Flags عبر LaunchDarkly (`utils/launchdarkly.js`) مع endpoint اختبار `GET /api/test/feature-flag`.
 
 ## ✨ نظرة عامة
 
@@ -86,6 +88,9 @@ docker compose up --build
 - Webhooks للتكاملات الخارجية (Cloudinary و Paymob)
 - إرسال البريد الإلكتروني للتحقق والتنبيهات
 - معالجة الأخطاء الموحدة والشاملة
+- Rate Limiting حسب نوع المسار (عام/صارم/خفيف)
+- Logging مركزي عبر Winston + Morgan
+- Feature Flags (LaunchDarkly) للتفعيل المرحلي للميزات
 - توثيق API مفصل وشامل
 
 ## 🛠 Tech Stack
@@ -102,6 +107,10 @@ docker compose up --build
 | **البريد الإلكتروني** | Nodemailer 8.0.1 |
 | **التحقق من الصحة** | express-validator 7.3.1 |
 | **معالجة غير متزامنة** | express-async-handler 1.2.0 |
+| **الأمان** | helmet 8.1.0, express-rate-limit 8.5.1 |
+| **الأداء** | compression 1.8.1 |
+| **التسجيل والمراقبة** | morgan 1.10.1, winston 3.19.0 |
+| **Feature Flags** | LaunchDarkly SDK |
 | **التطوير** | Nodemon 3.1.14 |
 | **الاختبار** | Jest, Supertest, mongodb-memory-server |
 
@@ -120,7 +129,7 @@ docker compose up --build
 
 ```env
 # إعدادات السيرفر الأساسية
-PORT=8000
+PORT=3000
 NODE_ENV=development
 
 # قاعدة البيانات
@@ -184,7 +193,7 @@ cd Platform
 npm install
 
 # 3. إنشاء ملف config.env
-cp config.env.example config.env
+cp .env.example config.env
 # أو قم بإنشاء ملف config.env يدويًا بالمتغيرات المذكورة أعلاه
 
 # 4. تشغيل السيرفر
@@ -202,8 +211,8 @@ docker compose down
 ```
 
 ### الرابط الافتراضي
-- **السيرفر**: `http://localhost:8000`
-- **فحص الصحة**: `GET http://localhost:8000/api/health`
+- **السيرفر**: `http://localhost:3000`
+- **فحص الصحة**: `GET http://localhost:3000/api/health`
 
 ## 📦 أوامر npm
 
@@ -462,6 +471,7 @@ Platform/
 │
 ├── middlewares/
 │   ├── errorMiddleware.js          # معالجة الأخطاء العالمية
+│   ├── rateLimiter.js              # ✨ Rate Limiting حسب المسار
 │   ├── uploadImageMiddleware.js    # رفع الصور
 │   ├── uploadVideoMiddleware.js    # رفع الفيديوهات
 │   └── validatorMiddleware.js      # التحقق من البيانات
@@ -516,9 +526,12 @@ Platform/
 │   ├── apiFeatures.js              # تصفية وترتيب وتصفح
 │   ├── constants.js                # الثوابت والأدوار
 │   ├── createToken.js              # إنشاء JWT
+│   ├── launchdarkly.js             # ✨ إعداد Feature Flags
+│   ├── logger.js                   # ✨ تسجيل مركزي (Winston)
 │   ├── sanitizeData.js             # تنظيف البيانات
 │   ├── sendEmail.js                # إرسال البريد
 │   ├── seedUsers.js                # بيانات اختبارية
+│   ├── test-flag.js                # ✨ أدوات اختبار Feature Flags
 │   └── validators/                 # مدققات البيانات
 │       ├── authValidator.js
 │       ├── userValidator.js
@@ -544,6 +557,9 @@ Platform/
 │
 ├── .env.example                    # مثال متغيرات البيئة
 ├── config.env                      # متغيرات البيئة الفعلية
+├── Dockerfile                      # ✨ إعداد Docker image
+├── docker-compose.yml              # ✨ تشغيل Docker Compose
+├── .dockerignore                   # ✨ استبعاد ملفات Docker build
 ├── package.json
 ├── server.js                       # نقطة الدخول الرئيسية
 ├── vercel.json                     # إعدادات Vercel
@@ -584,6 +600,7 @@ GET    /api/v1/coupons/code/:code   # التحقق من الكوبون
 ```
 GET    /api/v1/cache/stats          # إحصائيات الكاش
 DELETE /api/v1/cache/flush          # مسح الكاش (Super Admin)
+GET    /api/test/feature-flag       # اختبار LaunchDarkly Feature Flag
 ```
 
 للمزيد من التفاصيل، راجع [README_API.md](README_API.md) و[Platform-API.postman_collection.json](Platform-API.postman_collection.json)
@@ -597,5 +614,6 @@ DELETE /api/v1/cache/flush          # مسح الكاش (Super Admin)
 ## Deployment
 
 - `server.js` يصدّر `app`.
-- السيرفر يعمل محليًا على `PORT=8000` افتراضيًا إذا لم يتم تحديد منفذ في `config.env`.
+- السيرفر يعمل محليًا على `PORT=3000` افتراضيًا إذا لم يتم تحديد منفذ في `config.env`.
 - ملف الـ seed الحالي ينشئ بيانات مترابطة ويمكن تشغيله يدويًا عبر `node scripts/seed.js`.
+- يوجد دعم Docker جاهز عبر `Dockerfile` و `docker-compose.yml`.
