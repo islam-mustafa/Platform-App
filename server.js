@@ -1,6 +1,7 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
+const morgan = require('morgan');
 
 const ApiError = require("./utils/apiError");
 const { globalError } = require("./middlewares/errorMiddleware");
@@ -17,6 +18,8 @@ const assignmentRoute = require('./routes/assignmentRoute');
 const paymentRoute = require('./routes/paymentRoute');
 const couponRoute = require('./routes/couponRoute');
 const cacheRoute = require('./routes/cacheRoute');
+const logger = require('./utils/logger');
+const { initializeLD, closeLD } = require('./utils/launchdarkly');
 
 // Load environment variables
 dotenv.config({ path: "config.env" });
@@ -27,14 +30,20 @@ const app = express();
 // Enable CORS for all routes
 app.use(cors());
 
+const morganStream = {
+  write: (message) => logger.http(message.trim()),
+};
+
+app.use(morgan('combined', { stream: morganStream }));
+
 // ============================================================
 // ✅ TEST Webhook endpoints (مباشرة في server.js)
 // ============================================================
 
 // محاكاة دفع ناجح
 app.post('/webhooks/test/success', express.json(), async (req, res) => {
-  console.log('🧪 TEST: Webhook reached directly in server.js (success)');
-  console.log('Body:', req.body);
+  logger.info('🧪 TEST: Webhook reached directly in server.js (success)');
+  logger.debug('Body:', req.body);
   
   const { orderId } = req.body;
   
@@ -61,20 +70,20 @@ app.post('/webhooks/test/success', express.json(), async (req, res) => {
         },
         { upsert: true }
       );
-      console.log(`✅ StudentLesson updated for user ${result.userId}, lesson ${result.lessonId}`);
+      logger.info(`✅ StudentLesson updated for user ${result.userId}, lesson ${result.lessonId}`);
     }
     
     res.status(200).json({ success: true, message: 'Mock payment processed', data: result });
   } catch (error) {
-    console.error('Error in test webhook:', error);
+    logger.error('Error in test webhook:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
 // محاكاة دفع فاشل
 app.post('/webhooks/test/failed', express.json(), async (req, res) => {
-  console.log('🧪 TEST: Webhook reached directly in server.js (failed)');
-  console.log('Body:', req.body);
+  logger.info('🧪 TEST: Webhook reached directly in server.js (failed)');
+  logger.debug('Body:', req.body);
   
   const { orderId } = req.body;
   
@@ -89,11 +98,11 @@ app.post('/webhooks/test/failed', express.json(), async (req, res) => {
     
     const result = await paymentService.mockFailedPayment(orderId);
     
-    console.log(`❌ Payment failed for order ${orderId}`);
+    logger.warn(`❌ Payment failed for order ${orderId}`);
     
     res.status(200).json({ success: true, message: 'Mock failed payment processed', data: result });
   } catch (error) {
-    console.error('Error in test webhook (failed):', error);
+    logger.error('Error in test webhook (failed):', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -123,6 +132,35 @@ app.get("/api/health", (req, res) => {
     time: new Date().toISOString()
   });
 });
+
+// ============================================================
+// ✅ Test LaunchDarkly endpoint
+// ============================================================
+app.get('/api/test/feature-flag', async (req, res) => {
+  try {
+    // مستخدم تجريبي (استخدم بيانات مستخدم حقيقي لو متاح)
+    const testUser = {
+      _id: 'test_user_123',
+      name: 'Test User',
+      email: 'test@example.com',
+      role: 'user'
+    };
+    
+    const { testFeatureFlag } = require('./utils/test-flag');
+    const flagValue = await testFeatureFlag(testUser);
+    
+    res.status(200).json({
+      status: 'success',
+      flag: 'test-flag',
+      value: flagValue,
+      message: flagValue ? 'Feature is ENABLED' : 'Feature is DISABLED'
+    });
+  } catch (error) {
+    logger.error('Error testing feature flag:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 
 // ============================================================
 // ✅ API Routes
@@ -157,27 +195,30 @@ const PORT = process.env.PORT || 8000;
 
 const startServer = async () => {
   try {
+    // ✅ تهيئة LaunchDarkly أولاً
+    await initializeLD();
+    
     // اتصال واحد بقاعدة البيانات قبل تشغيل السيرفر
     await dbConnection();
-    console.log('✅ Database connected successfully');
+    logger.info('✅ Database connected successfully');
     
     const server = app.listen(PORT, () => {
-      console.log(`✅ App running on port ${PORT}`);
-      console.log(`📍 Health check: http://localhost:${PORT}/api/health`);
-      console.log(`📍 Webhook endpoint: http://localhost:${PORT}/webhooks/paymob`);
+      logger.info(`✅ App running on port ${PORT}`);
+      logger.info(`📍 Health check: http://localhost:${PORT}/api/health`);
+      logger.info(`📍 Webhook endpoint: http://localhost:${PORT}/webhooks/paymob`);
     });
 
     // Handle unhandled promise rejections
     process.on("unhandledRejection", (err) => {
-      console.error(`❌ UnhandledRejection Error: ${err.name} | ${err.message}`);
+      logger.error(`❌ UnhandledRejection Error: ${err.name} | ${err.message}`);
       server.close(() => {
-        console.error("Shutting down...");
+        logger.error("Shutting down...");
         process.exit(1);
       });
     });
     
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    logger.error('❌ Failed to start server:', error);
     process.exit(1);
   }
 };
@@ -191,3 +232,10 @@ module.exports = app;
 if (process.env.NODE_ENV !== 'test') {
   startServer();
 }
+
+// ✅ إغلاق LaunchDarkly عند إيقاف السيرفر
+process.on('SIGTERM', async () => {
+  logger.info('SIGTERM received, closing...');
+  await closeLD();
+  process.exit(0);
+});

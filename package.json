@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-      "dev": "nodemon server.js",
-      "start": "node server.js",
-      "test": "jest --forceExit",
-      "test:watch": "jest --watch",
-      "test:coverage": "jest --coverage --forceExit",
-      "build": "echo 'Build completed'"
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "test": "jest --forceExit",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage --forceExit",
+    "build": "echo 'Build completed'"
   },
   "type": "commonjs",
   "keywords": [],
@@ -16,6 +16,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@launchdarkly/node-server-sdk": "^9.10.14",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^1.21.0",
     "cors": "^2.8.6",
@@ -25,8 +26,10 @@
     "express-async-handler": "^1.2.0",
     "express-validator": "^7.3.1",
     "jsonwebtoken": "^9.0.3",
+    "launchdarkly-node-server-sdk": "^7.0.4",
     "mongodb": "^7.1.1",
     "mongoose": "^9.3.3",
+    "morgan": "^1.10.1",
     "multer": "^2.1.0",
     "multer-storage-cloudinary": "^4.0.0",
     "node-cache": "^5.1.2",
@@ -34,7 +37,8 @@
     "nodemon": "^3.1.14",
     "sharp": "^0.34.5",
     "streamifier": "^0.1.1",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "winston": "^3.19.0"
   },
   "devDependencies": {
     "jest": "^30.3.0",
