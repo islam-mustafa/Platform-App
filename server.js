@@ -20,6 +20,12 @@ const couponRoute = require('./routes/couponRoute');
 const cacheRoute = require('./routes/cacheRoute');
 const logger = require('./utils/logger');
 const { initializeLD, closeLD } = require('./utils/launchdarkly');
+const { 
+  generalLimiter, 
+  strictLimiter, 
+  lightLimiter, 
+  webhookLimiter 
+} = require('./middlewares/rateLimiter');
 
 // Load environment variables
 dotenv.config({ path: "config.env" });
@@ -35,6 +41,30 @@ const morganStream = {
 };
 
 app.use(morgan('combined', { stream: morganStream }));
+
+// ============================================================
+// ✅ Rate Limiting (تحديد عدد الطلبات)
+// ============================================================
+
+// تطبيق المعدل العام على كل الـ API
+app.use('/api/', generalLimiter);
+
+// معدل أشد على auth endpoints
+app.use('/api/v1/auth/login', strictLimiter);
+app.use('/api/v1/auth/signup', strictLimiter);
+app.use('/api/v1/auth/forgotPassword', strictLimiter);
+app.use('/api/v1/auth/resetPassword', strictLimiter);
+
+// معدل أشد على payment endpoints
+app.use('/api/v1/payment/checkout', strictLimiter);
+
+// معدل خفيف على جلب البيانات
+app.use('/api/v1/lessons', lightLimiter);
+app.use('/api/v1/subjects', lightLimiter);
+app.use('/api/v1/grades', lightLimiter);
+
+// Webhooks من غير حد
+app.use('/webhooks', webhookLimiter);
 
 // ============================================================
 // ✅ TEST Webhook endpoints (مباشرة في server.js)
